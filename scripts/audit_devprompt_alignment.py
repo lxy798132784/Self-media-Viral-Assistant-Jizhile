@@ -57,7 +57,9 @@ for rel in ["include/jizhilia_client.h", "include/config_manager.h", "include/pl
     if text.count("@brief") < 1 or not re.search(r"[\u4e00-\u9fff]", text) or not re.search(r"[A-Za-z]", text):
         print(f"DevPrompt alignment failed: {rel} lacks bilingual brief comments")
         sys.exit(1)
-for forbidden in ["github_pat_", "ghp_", "sk-", "token=czt", "token=Axric", "token=o3K", "token=DA8A"]:
+forbidden_parts = [("github", "_pat_"), ("gh", "p_"), ("sk", "-"), ("token", "=czt"), ("token", "=Axric"), ("token", "=o3K"), ("token", "=DA8A")]
+for left, right in forbidden_parts:
+    forbidden = left + right
     if forbidden in combined:
         print(f"DevPrompt alignment failed: forbidden secret-like text {forbidden}")
         sys.exit(1)
