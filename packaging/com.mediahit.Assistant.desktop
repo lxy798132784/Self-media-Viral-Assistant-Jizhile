@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Media Hit Assistant
+Name[zh_CN]=自媒体爆款助手
+Comment=Local content intelligence workspace
+Comment[zh_CN]=本地内容情报工作台
+Exec=media-hit-assistant
+Icon=com.mediahit.Assistant
+Terminal=false
+Categories=Office;Network;
+StartupNotify=true

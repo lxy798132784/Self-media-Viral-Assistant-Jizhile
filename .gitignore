@@ -1,0 +1,9 @@
+build*/
+dist/
+.cache/
+*.user
+*.db
+*.sqlite
+.env
+.env.local
+.DS_Store

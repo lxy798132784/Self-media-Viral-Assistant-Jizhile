@@ -1,0 +1,45 @@
+使用C++20，CMake，Qt6，QML，CTK，SQLite等技术，开发一个自媒体爆款助手，主要面向公众号爆款文章收集分析，收集频率和次数可调整，使用极致了API，API之中的相关参数要可以设定，支持导出为XML，Markdown等多种格式，编码要求如下
+C++/Qt 后端 + QML 前端
+1.企业级架构，方便开发与拓展，可以使用插件框架，有其他更好的框架也可以采用，编码风格参考Google C++ Style
+2.每一个函数要有中英文双语的详细注释和说明，参考如下：
+    /**
+ * @brief 获取单篇文章的数据指标
+ *        Fetch data metrics for a single article
+ *
+ * @details 通过指定的供应商 API 获取文章的阅读量、点赞数等指标。
+ *          如果主供应商失败，会自动尝试 fallback 链中的下一个供应商。
+ *          Fetches article metrics (read count, likes, etc.) via the
+ *          specified provider API. If the primary provider fails,
+ *          automatically falls back to the next provider in the chain.
+ *
+ * @param url 文章链接 / The URL of the article
+ * @param platform 平台标识 / Platform identifier ("wechat", "douyin", etc.)
+ * @return std::expected 包含数据或错误 / Contains metrics or error
+ *
+ * @note 该函数是异步的，通过 co_await 获取结果
+ *       This function is asynchronous, use co_await to get the result
+ *
+ * @example
+ *   auto result = co_await fetchContentData(url, "wechat");
+ *   if (result) {
+ *       qDebug() << result->title;
+ *   }
+ */
+
+/**
+ * @brief 功能简述 / Brief description
+ *
+ * @details 详细逻辑说明 / Detailed logic explanation
+ *
+ * @param param 参数说明 / Parameter description
+ * @return 返回值说明 / Return value description
+ *
+ * @note 注意事项 / Notes
+ * @example 使用示例 / Usage example
+ */
+
+3.注意并发控制、错误处理、设计模式、Fallback机制等等方面
+4.要求至少有仪表盘，内容库，拆解报告，选题推荐，设置等等页面
+5.要求跨平台可部署，至少支持Linux，Windows、Docker三个平台，最好再支持更多的架构，例如Arm64/AArch64，X86/AMD64等，Windows至少支持直接本地单文件安装
+6.要求有中英双语详细的README文档，使用文档，说明文档，开发文档等等，总的要有，各个关键节点也要有，务必详细具体。另外，要求有详细的开发Example
+7.查询参考成熟的UI设计，UI交互，人体工学等

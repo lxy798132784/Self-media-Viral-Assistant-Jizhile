@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.mediahit.Assistant</id>
+  <name>Media Hit Assistant</name>
+  <summary>Local content intelligence workspace</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <description>
+    <p>Media Hit Assistant helps creators collect, review, analyze, and export article intelligence from local storage and configured data providers.</p>
+  </description>
+  <launchable type="desktop-id">com.mediahit.Assistant.desktop</launchable>
+  <provides><binary>media-hit-assistant</binary></provides>
+</component>
