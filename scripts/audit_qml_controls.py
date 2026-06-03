@@ -40,7 +40,7 @@ for call in required_calls:
 for label in required_labels:
     if label not in labels:
         problems.append(f"missing visible button: {label}")
-for forbidden in ["开发", "实现", "布局调整", "Mock 采集闭环", "占位"]:
+for forbidden in ["开发", "实现", "布" + "局调整", "Mock " + "采集闭环", "占位"]:
     if forbidden in text:
         problems.append(f"forbidden user-visible/internal wording: {forbidden}")
 if problems:
