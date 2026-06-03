@@ -1,37 +1,84 @@
-# 自媒体爆款助手项目规格 / Media Hit Assistant Specification
+# Project Specification / 项目规格
 
-## 目标 / Goal
+> Product contract for Media Hit Assistant. This document maps the original DevPrompt into concrete user-facing modules, technical decisions, and acceptance gates.
+>
+> 自媒体爆款助手的产品契约。本文把原始 DevPrompt 拆成可交付的用户模块、技术决策和验收门禁。
 
-使用 C++20、CMake、Qt6、QML、SQLite 和 CTK-ready 插件化架构开发跨平台自媒体爆款助手。首版聚焦公众号爆款文章收集分析，接入极致了 API 本地文档资料库，并提供真实接口调用与安全示例回退。
+## 1. Product goal / 产品目标
 
-Build a cross-platform media-hit assistant using C++20, CMake, Qt6, QML, SQLite, and CTK-ready plugin architecture. The first release focuses on collecting and analyzing public-account hit articles, uses the local Jizhilia API knowledge base, and supports both real endpoint calls and safe sample fallback.
+Media Hit Assistant is a desktop workspace for public-account content teams that need to collect hit articles, inspect engagement signals, derive topic ideas, and export reusable reports.
 
-## 功能范围 / Feature scope
+自媒体爆款助手面向公众号内容团队：采集爆款文章、查看互动指标、拆解内容结构、生成选题方向，并导出可复用报告。
 
-- 仪表盘 / Dashboard：统计、快速采集、全流程自检。
-- 内容库 / Content library：文章列表、刷新、Markdown/XML 导出。
-- 接口库 / API catalog：API 分类查询、endpoint path 采集。
-- 拆解报告 / Analysis report：阅读、点赞、爆款评分、结构化观察。
-- 选题推荐 / Topic recommendation：基于内容库指标生成选题。
-- 插件 / Plugins：Provider、Exporter、Analyzer 清单与插件分析。
-- 设置 / Settings：API Key、verify code、采集频率、次数、QPS、导出目录、运行历史。
+## 2. Target workflow / 目标流程
 
-## 技术要求 / Technical requirements
+```text
+Configure API / 配置 API
+  -> Collect by keyword or endpoint / 按关键词或 endpoint 采集
+  -> Store in SQLite / 写入 SQLite
+  -> Review library / 查看内容库
+  -> Analyze hit score / 生成爆款评分
+  -> Recommend topics / 推荐选题
+  -> Export Markdown or XML / 导出 Markdown 或 XML
+```
 
-- C++20 with Google-style naming where practical / C++20，尽量遵循 Google 风格命名。
-- CMake project with Qt6 Widgets-free QML frontend / CMake 工程，Qt6 + QML 前端。
-- SQLite local persistence / SQLite 本地持久化。
-- CTK-style extension points / CTK 风格扩展点。
-- Linux, Windows, Docker delivery scripts / Linux、Windows、Docker 交付脚本。
-- Source-first GitHub delivery without secrets / 源码优先上传 GitHub，不含密钥。
+## 3. Scope / 范围
 
-## 安全 / Security
+| Module / 模块 | Included / 已包含 |
+|---|---|
+| Dashboard / 仪表盘 | Statistics, quick collection, full workflow self-check / 统计、快速采集、全流程自检 |
+| Content Library / 内容库 | Article list, refresh, Markdown/XML export / 文章列表、刷新、Markdown/XML 导出 |
+| API Catalog / 接口库 | Local Jizhilia API index, category filter, endpoint collection / 本地极致了 API 索引、分类筛选、endpoint 采集 |
+| Analysis Report / 拆解报告 | Reads, likes, hit score, structured summary / 阅读、点赞、爆款评分、结构化摘要 |
+| Topic Recommendation / 选题推荐 | Topic ideas from high-performing articles / 从高表现文章生成选题 |
+| Plugins / 插件 | Provider, Exporter, Analyzer registry / Provider、Exporter、Analyzer 注册表 |
+| Settings / 设置 | API key, verify code, interval, run count, QPS, export dir, run history / API 参数、频率、次数、QPS、导出目录、运行历史 |
 
-API Key 只从本地设置或运行环境读取，不提交到仓库。默认示例采集不需要密钥，避免误扣费。vendor API 文档中的示例 token 已脱敏为 `[REDACTED]`。
+## 4. Technical contract / 技术契约
 
-API keys are read only from local settings or runtime environment and are never committed. Default sample collection requires no credentials to avoid accidental charges. Sample tokens in vendor API docs are sanitized as `[REDACTED]`.
+- Language and build: C++20 + CMake.
+- UI: Qt6 + QML.
+- Persistence: SQLite.
+- API: Jizhilia endpoint payloads and local API catalog.
+- Extensibility: CTK-style plugin interfaces.
+- Platforms: Linux, Windows, Docker; source is architecture-neutral for x86/AMD64 and ARM64/AArch64 Qt builds.
+- Export: Markdown and XML.
 
-## 验收门禁 / Acceptance gates
+- 语言与构建：C++20 + CMake。
+- UI：Qt6 + QML。
+- 持久化：SQLite。
+- API：极致了 endpoint 请求与本地 API 目录。
+- 扩展性：CTK 风格插件接口。
+- 平台：Linux、Windows、Docker；源码对 x86/AMD64 与 ARM64/AArch64 Qt 构建保持架构中立。
+- 导出：Markdown 与 XML。
+
+## 5. Configuration contract / 配置契约
+
+The user can configure:
+
+用户可配置：
+
+- API key / API Key
+- Verify code / 验证码
+- Endpoint path / 接口路径
+- Collection interval / 采集频率
+- Maximum run count / 最大采集次数
+- QPS limit / QPS 限速
+- Export directory / 导出目录
+
+## 6. Safety contract / 安全契约
+
+- No key is needed for local self-test.
+- Missing credentials trigger safe sample collection.
+- API examples in vendor docs are sanitized as `[REDACTED]`.
+- Runtime artifacts and databases are not committed.
+
+- 本地自检不需要密钥。
+- 缺少凭据时进入安全示例采集。
+- vendor API 示例中的 token 已脱敏为 `[REDACTED]`。
+- 运行产物和数据库不提交。
+
+## 7. Acceptance gates / 验收门禁
 
 ```bash
 cmake --build build -j2
@@ -42,3 +89,7 @@ python3 scripts/audit_devprompt_alignment.py
 ./scripts/package-linux.sh
 cmake --install build --prefix /tmp/media-hit-install
 ```
+
+A release candidate must pass every gate above.
+
+候选交付版本必须通过以上全部门禁。

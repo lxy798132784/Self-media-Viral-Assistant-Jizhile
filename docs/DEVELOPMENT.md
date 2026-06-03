@@ -1,71 +1,114 @@
-# 开发文档 / Developer Guide
+# Developer Guide / 开发文档
 
-## 模块说明 / Modules
+This guide is for contributors who want to build, test, package, or extend Media Hit Assistant.
 
-### ConfigManager
-管理 API Key、验证码、采集频率、次数、QPS 和导出目录。真实密钥只保存在本机设置或环境变量中。
+本文面向希望构建、测试、打包或扩展自媒体爆款助手的开发者。
 
-Manages API key, verification code, interval, run count, QPS, and export directory. Real credentials stay in local settings or environment variables only.
+## Development setup / 开发环境
 
-### ApiCatalog
-读取 `vendor/jizhilia-api-knowledge/api-index.json`，提供极致了 API 文档索引、分类查询和 endpoint path 查询。
+Ubuntu 24.04 example:
 
-Loads `vendor/jizhilia-api-knowledge/api-index.json` and provides Jizhilia API endpoint indexing, category search, and endpoint path lookup.
+```bash
+sudo apt-get update
+sudo apt-get install -y cmake g++ python3   qt6-base-dev qt6-declarative-dev qt6-tools-dev   qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
+```
 
-### DatabaseManager
-负责 SQLite schema、文章表、采集任务表、运行历史表，以及统计、排序、推荐查询。
+Configure and build:
 
-Owns the SQLite schema, article table, collection-task table, run-history table, statistics, sorting, and recommendation queries.
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j2
+```
 
-### JizhiliaClient
-负责构造极致了 API 请求 payload、同步 HTTP 请求、响应解析、可重试状态判断、退避延迟和安全示例回退。
+## Project structure / 项目结构
 
-Builds Jizhilia request payloads, performs blocking HTTP requests, parses responses, classifies retryable errors, calculates backoff, and provides safe sample fallback.
+```text
+include/        public C++ interfaces / C++ 公开接口
+src/            service implementations / 服务实现
+ui/             QML interface / QML 界面
+tests/          QtTest unit tests / QtTest 单元测试
+scripts/        verification and packaging scripts / 验证与打包脚本
+packaging/      desktop metadata / 桌面元数据
+docs/           product and developer docs / 产品与开发文档
+vendor/         sanitized API knowledge / 已脱敏 API 知识库
+```
 
-### ExportService
-导出 Markdown 和 XML。XML 会做实体转义，避免标题中的特殊字符破坏格式。
+## Core modules / 核心模块
 
-Exports Markdown and XML. XML output escapes entities so special title characters do not break the document.
+| Module / 模块 | Responsibility / 职责 |
+|---|---|
+| `ConfigManager` | API key, verify code, interval, run count, QPS, export directory / API 参数、频率、次数、QPS、导出目录 |
+| `ApiCatalog` | Local Jizhilia API index loading and search / 本地极致了 API 索引加载和查询 |
+| `JizhiliaClient` | Payload creation, HTTP call, JSON parsing, retry/fallback / 请求体、HTTP、JSON 解析、重试与回退 |
+| `DatabaseManager` | SQLite schema, articles, tasks, run history / SQLite schema、文章、任务、运行历史 |
+| `ExportService` | Markdown and XML output / Markdown 与 XML 输出 |
+| `BuiltinPluginRegistry` | CTK-style Provider, Exporter, Analyzer entries / CTK 风格插件入口 |
+| `AppController` | QML-facing orchestration / 面向 QML 的编排 |
 
-### BuiltinPluginRegistry
-提供 CTK 风格的 Provider、Exporter、Analyzer 扩展点。当前为内置注册表，后续可替换为动态 CTK 插件加载器。
+## Testing workflow / 测试流程
 
-Provides CTK-style Provider, Exporter, and Analyzer extension points. The current version is a built-in registry that can later be replaced by dynamic CTK loading.
+Run fast checks while developing:
 
-### AppController
-QML 门面层，连接 UI 与后端服务，负责采集、endpoint 调用、导出、自检、插件分析和运行历史读回。
-
-QML-facing facade that connects UI and backend services for collection, endpoint calls, export, self-test, plugin analysis, and run-history readback.
-
-## 开发原则 / Development rules
-
-- 新功能先写 Qt Test。/ Write Qt tests before new behavior.
-- 每个关键函数使用中英文双语注释。/ Document key functions with Chinese-English comments.
-- 真实 API Key 不写源码、不写文档、不写 Git。/ Never write real API keys into source, docs, or Git.
-- 所有网络请求必须经过错误处理和 fallback。/ Network calls must include error handling and fallback.
-- 可见 UI 控件必须有动作闭环。/ Every visible UI control must produce a verifiable action.
-- 打包与安装元数据必须通过脚本验证。/ Packaging and install metadata must be verified by scripts.
-
-## 并发与限速 / Concurrency and rate limiting
-
-当前桌面端采用保守串行请求策略，默认 QPS 为 1.5，避免误触发上游限流。`JizhiliaClient::retryDelayMs()` 使用指数退避；`isRetryableStatus()` 识别 429 与 5xx。
-
-The desktop app currently uses conservative serialized requests with default QPS 1.5 to avoid upstream throttling. `JizhiliaClient::retryDelayMs()` uses exponential backoff, and `isRetryableStatus()` recognizes 429 and 5xx.
-
-## 关键测试 / Key tests
+开发中先跑快速检查：
 
 ```bash
 cmake --build build -j2
 ctest --test-dir build --output-on-failure
-python3 scripts/audit_qml_controls.py
-python3 scripts/audit_devprompt_alignment.py
-QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
 ```
 
-## 交付检查 / Delivery checklist
+Run full gates before committing:
 
-1. 本地 build/test/self-test 通过。/ Local build, tests, and self-test pass.
-2. QML 控件审计通过。/ QML control audit passes.
-3. DevPrompt 对齐审计通过。/ DevPrompt alignment audit passes.
-4. `cmake --install` 能安装可执行文件、desktop、metainfo、icon。/ `cmake --install` installs executable, desktop, metainfo, and icon.
-5. 远端仓库复扫无密钥、无 build/dist 产物。/ Remote repository scan has no secrets and no build/dist artifacts.
+提交前跑全量门禁：
+
+```bash
+./scripts/verify-all.sh
+```
+
+The full gate includes:
+
+全量门禁包含：
+
+- CMake build / CMake 构建
+- QtTest suite / QtTest 测试
+- offscreen self-test / offscreen 自检
+- Markdown and XML artifact checks / Markdown 与 XML 产物检查
+- QML control audit / QML 控件审计
+- DevPrompt alignment audit / DevPrompt 对齐审计
+
+## Adding a new API endpoint / 新增 API endpoint
+
+1. Add or update the endpoint entry in the local API index.
+2. Use `ApiCatalog::findByCategory()` or `findByPath()` to expose it.
+3. Use `JizhiliaClient::callEndpointBlocking()` for collection.
+4. Add a QtTest assertion covering the endpoint path or payload.
+5. Run `./scripts/verify-all.sh`.
+
+1. 在本地 API 索引中新增或更新 endpoint。
+2. 通过 `ApiCatalog::findByCategory()` 或 `findByPath()` 暴露。
+3. 通过 `JizhiliaClient::callEndpointBlocking()` 采集。
+4. 添加 QtTest 断言覆盖 endpoint path 或 payload。
+5. 运行 `./scripts/verify-all.sh`。
+
+## Adding an exporter / 新增导出器
+
+1. Implement export behavior in `ExportService` or a plugin entry.
+2. Add it to `BuiltinPluginRegistry` if it should appear in the plugin list.
+3. Add tests for generated text and escaping behavior.
+4. Add a QML button only if it has a real backend action.
+
+1. 在 `ExportService` 或插件入口实现导出行为。
+2. 如果需要出现在插件列表中，把它加入 `BuiltinPluginRegistry`。
+3. 添加生成文本与转义行为测试。
+4. 只有存在真实后端动作时才添加 QML 按钮。
+
+## Documentation rules / 文档规则
+
+- README should explain value, quick start, architecture, quality gates, and roadmap.
+- User-facing docs should be bilingual where practical.
+- Do not expose real credentials, private URLs, or internal implementation notes.
+- Keep examples runnable and aligned with scripts.
+
+- README 要讲清价值、快速开始、架构、质量门禁和路线图。
+- 用户可见文档尽量中英文双语。
+- 不暴露真实凭据、私有 URL 或内部实现备注。
+- 示例必须可运行，并与脚本保持一致。

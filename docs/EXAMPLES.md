@@ -1,72 +1,97 @@
-# 使用示例 / Examples
+# Examples / 使用示例
 
-## 1. 创建采集任务 / Create a collection task
+Practical workflows for Media Hit Assistant.
 
-在“设置”页填写：
+自媒体爆款助手的常用工作流示例。
 
-Fill in the Settings page:
+## 1. First run without credentials / 无凭据首次运行
 
-- 任务名称 / Task name：AI 爆文监控
-- 关键词 / Keyword：AI
-- 接口路径 / Endpoint path：`/fbmain/monitor/v3/web_search`
-- 频率 / Frequency：300 秒 / seconds
-- 次数 / Run count：10
-- QPS：1.5
+You can test the full product flow without configuring any API key.
 
-点击“保存采集任务”。
-
-Click "保存采集任务" to save the task.
-
-## 2. 运行示例采集 / Run sample collection
-
-点击“立即采集”或仪表盘的“全流程自检”。系统会生成样本文章并写入 SQLite。
-
-Click "立即采集" or "全流程自检". The app writes sample articles into SQLite when no API key is configured.
-
-## 3. 按接口采集 / Collect through a chosen endpoint
-
-进入“接口库”，输入分类关键词（例如“公众号”）后点击“查询接口”。复制或输入 endpoint path，再输入关键词，点击“按接口采集”。
-
-Open "接口库", enter a category keyword such as "公众号", click "查询接口", then enter an endpoint path and keyword and click "按接口采集".
-
-## 4. 查看内容库 / Review the content library
-
-进入“内容库”，点击“刷新”，查看采集结果。内容会按综合热度排序显示。
-
-Open "内容库" and click "刷新". Articles are displayed by combined popularity score.
-
-## 5. 导出 / Export
-
-内容库支持：
-
-The content library supports:
-
-- Markdown：`/tmp/media-hit-articles.md`
-- XML：`/tmp/media-hit-articles.xml`
-
-## 6. 插件分析 / Plugin analysis
-
-进入“插件”，点击“刷新插件”查看 Provider、Exporter、Analyzer。点击“插件分析”生成爆款评分报告。
-
-Open "插件", click "刷新插件" to view Provider, Exporter, and Analyzer entries. Click "插件分析" to generate the hit-score report.
-
-## 7. 命令行自检 / Command-line self-test
+不配置任何 API Key 也可以测试完整产品流程。
 
 ```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j2
 QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
 ```
 
-产物 / Artifacts:
+Expected artifacts:
+
+预期产物：
 
 - `/tmp/media-hit-self-test.md`
 - `/tmp/media-hit-self-test.xml`
 
-## 8. 全流程验证 / Full verification
+## 2. Create a collection task / 创建采集任务
+
+Open **Settings / 设置** and fill in:
+
+打开 **设置** 页面并填写：
+
+| Field / 字段 | Example / 示例 |
+|---|---|
+| Task name / 任务名称 | AI 爆文监控 |
+| Keyword / 关键词 | AI |
+| Endpoint path / 接口路径 | `/fbmain/monitor/v3/web_search` |
+| Frequency / 频率 | 300 seconds / 300 秒 |
+| Run count / 次数 | 10 |
+| QPS | 1.5 |
+
+Click **保存采集任务**.
+
+点击 **保存采集任务**。
+
+## 3. Collect by endpoint / 按 endpoint 采集
+
+1. Open **API Catalog / 接口库**.
+2. Enter a category keyword such as `公众号`.
+3. Click **查询接口**.
+4. Copy or type an endpoint path.
+5. Enter a keyword.
+6. Click **按接口采集**.
+
+1. 打开 **接口库**。
+2. 输入分类关键词，例如 `公众号`。
+3. 点击 **查询接口**。
+4. 复制或输入 endpoint path。
+5. 输入关键词。
+6. 点击 **按接口采集**。
+
+## 4. Review and export / 查看与导出
+
+Open **Content Library / 内容库**:
+
+打开 **内容库**：
+
+- Click **刷新** to reload articles.
+- Click **导出 Markdown** to write `/tmp/media-hit-articles.md`.
+- Click **导出 XML** to write `/tmp/media-hit-articles.xml`.
+
+- 点击 **刷新** 重新读取文章。
+- 点击 **导出 Markdown** 写入 `/tmp/media-hit-articles.md`。
+- 点击 **导出 XML** 写入 `/tmp/media-hit-articles.xml`。
+
+## 5. Generate plugin analysis / 生成插件分析
+
+Open **Plugins / 插件**:
+
+打开 **插件**：
+
+1. Click **刷新插件**.
+2. Confirm Provider, Exporter, and Analyzer entries are listed.
+3. Click **插件分析** to generate the hit-score report.
+
+1. 点击 **刷新插件**。
+2. 确认 Provider、Exporter、Analyzer 已列出。
+3. 点击 **插件分析** 生成爆款评分报告。
+
+## 6. Full developer verification / 开发者全量验证
 
 ```bash
 ./scripts/verify-all.sh
 ```
 
-该脚本验证构建、单元测试、自检导出、QML 控件审计、DevPrompt 对齐关键词和 offscreen 启动。
+This is the command to run before every delivery.
 
-The script verifies build, unit tests, self-test exports, QML control audit, DevPrompt alignment keywords, and offscreen launch.
+每次交付前都应运行该命令。
