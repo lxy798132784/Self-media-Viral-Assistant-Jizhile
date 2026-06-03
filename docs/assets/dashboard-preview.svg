@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Media Hit Assistant dashboard preview">
+  <rect width="1280" height="720" rx="32" fill="#0f172a"/>
+  <rect x="48" y="48" width="1184" height="624" rx="24" fill="#111827" stroke="#334155"/>
+  <text x="80" y="104" fill="#e5e7eb" font-family="Arial, sans-serif" font-size="34" font-weight="700">Media Hit Assistant / 自媒体爆款助手</text>
+  <g fill="#1f2937" stroke="#38bdf8" stroke-opacity="0.6">
+    <rect x="80" y="144" width="160" height="44" rx="12"/>
+    <rect x="256" y="144" width="160" height="44" rx="12"/>
+    <rect x="432" y="144" width="160" height="44" rx="12"/>
+    <rect x="608" y="144" width="160" height="44" rx="12"/>
+    <rect x="784" y="144" width="160" height="44" rx="12"/>
+  </g>
+  <g fill="#cbd5e1" font-family="Arial, sans-serif" font-size="18">
+    <text x="113" y="173">Dashboard</text>
+    <text x="304" y="173">Library</text>
+    <text x="467" y="173">API Catalog</text>
+    <text x="659" y="173">Report</text>
+    <text x="830" y="173">Plugins</text>
+  </g>
+  <rect x="80" y="232" width="340" height="180" rx="18" fill="#0b1220" stroke="#334155"/>
+  <rect x="464" y="232" width="340" height="180" rx="18" fill="#0b1220" stroke="#334155"/>
+  <rect x="848" y="232" width="304" height="180" rx="18" fill="#0b1220" stroke="#334155"/>
+  <text x="112" y="282" fill="#38bdf8" font-family="Arial, sans-serif" font-size="26" font-weight="700">Collect</text>
+  <text x="496" y="282" fill="#38bdf8" font-family="Arial, sans-serif" font-size="26" font-weight="700">Analyze</text>
+  <text x="880" y="282" fill="#38bdf8" font-family="Arial, sans-serif" font-size="26" font-weight="700">Export</text>
+  <text x="112" y="326" fill="#e5e7eb" font-family="Arial, sans-serif" font-size="20">Keyword + endpoint collection</text>
+  <text x="496" y="326" fill="#e5e7eb" font-family="Arial, sans-serif" font-size="20">Hit score + topic ideas</text>
+  <text x="880" y="326" fill="#e5e7eb" font-family="Arial, sans-serif" font-size="20">Markdown / XML artifacts</text>
+  <rect x="80" y="456" width="1072" height="144" rx="18" fill="#0b1220" stroke="#334155"/>
+  <text x="112" y="510" fill="#e5e7eb" font-family="Arial, sans-serif" font-size="24" font-weight="700">Local-first SQLite workflow with safe fallback and CTK-style plugin surface</text>
+  <text x="112" y="554" fill="#94a3b8" font-family="Arial, sans-serif" font-size="20">本地优先 SQLite 工作流：安全回退、全流程自检、CTK 风格插件扩展面</text>
+</svg>
