@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QStringList>
+#include <QVector>
 #include "config_manager.h"
 #include "database_manager.h"
 #include "export_service.h"
@@ -53,6 +54,8 @@ class AppController : public QObject {
   Q_INVOKABLE int runHotTypicalCollection(const QString& apiKey, const QString& keyword, const QString& pubType,
                                           const QString& category, int page, const QString& startTime,
                                           const QString& endTime);
+  Q_INVOKABLE QStringList hotTypicalResultRows() const;
+  Q_INVOKABLE bool exportHotTypicalResults(const QString& path, const QString& format);
   Q_INVOKABLE QStringList apiEndpointRows(const QString& categoryKeyword = QString()) const;
   Q_INVOKABLE QString endpointPathFromRow(const QString& endpointRow) const;
   Q_INVOKABLE int runEndpointRow(const QString& endpointRow, const QString& keyword);
@@ -88,4 +91,5 @@ class AppController : public QObject {
   ContentDataClient client_;
   ApiCatalog api_catalog_;
   BuiltinPluginRegistry plugin_registry_;
+  QVector<Article> hot_typical_results_;
 };

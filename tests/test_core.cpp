@@ -16,11 +16,12 @@ class CoreTest : public QObject {
   void apiCatalogLoadsLocalIndex();
   void databaseStoresAndQueriesArticles();
   void databaseStoresCollectionTasks();
-  void exportServiceCreatesMarkdownAndXml();
+  void exportServiceCreatesMarkdownXmlAndSpreadsheet();
   void clientBuildsSearchPayload();
   void clientBuildsHotTypicalPayload();
   void clientValidatesOfficialHotTypicalModel();
-  void appControllerSupportsLanguageAndHotTypicalApi();
+  void clientParsesOfficialHotTypicalResponseForVisualization();
+  void appControllerCollectsHotTypicalAndExportsMultipleFormats();
   void pluginRegistryExposesBuiltins();
   void pluginRegistryScansDynamicPluginsFailClosed();
   void clientClassifiesApiErrorsAndSupportsSmokePlan();
@@ -85,20 +86,37 @@ void CoreTest::databaseStoresCollectionTasks() {
   QCOMPARE(tasks.first().keyword, QStringLiteral("AI"));
 }
 
-void CoreTest::exportServiceCreatesMarkdownAndXml() {
+void CoreTest::exportServiceCreatesMarkdownXmlAndSpreadsheet() {
   Article article;
   article.title = QStringLiteral("标题 <测试>");
   article.accountName = QStringLiteral("公众号");
+  article.author = QStringLiteral("作者A");
   article.url = QStringLiteral("https://example.com/a");
+  article.publishTime = QStringLiteral("2026-05-17");
+  article.hotScore = 98.5;
   article.readCount = 123;
+  article.likeCount = 45;
+  article.avgReadCount = 100;
+  article.fansCount = 1000;
+  article.position = 1;
+  article.category = QStringLiteral("科技");
+  article.isOriginal = QStringLiteral("是");
+  article.publishType = QStringLiteral("图文");
+  article.coverUrl = QStringLiteral("https://example.com/cover.jpg");
   QVector<Article> articles{article};
   ExportService exporter;
   const auto md = exporter.toMarkdown(articles);
   QVERIFY(md.contains(QStringLiteral("# 自媒体爆款文章导出")));
   QVERIFY(md.contains(article.title));
+  QVERIFY(md.contains(QStringLiteral("98.5")));
   const auto xml = exporter.toXml(articles);
   QVERIFY(xml.contains(QStringLiteral("&lt;测试&gt;")));
+  QVERIFY(xml.contains(QStringLiteral("<hotScore>98.5</hotScore>")));
   QVERIFY(xml.contains(QStringLiteral("<articles>")));
+  const auto xls = exporter.toSpreadsheetXml(articles);
+  QVERIFY(xls.contains(QStringLiteral("Workbook")));
+  QVERIFY(xls.contains(QStringLiteral("标题 &lt;测试&gt;")));
+  QVERIFY(xls.contains(QStringLiteral("98.5")));
 }
 
 void CoreTest::clientBuildsSearchPayload() {
@@ -188,23 +206,54 @@ void CoreTest::clientValidatesOfficialHotTypicalModel() {
   QVERIFY(error.contains(QStringLiteral("start_time")));
 }
 
-void CoreTest::appControllerSupportsLanguageAndHotTypicalApi() {
+void CoreTest::clientParsesOfficialHotTypicalResponseForVisualization() {
+  ContentDataClient client;
+  const QByteArray official = R"({"code":0,"msg":"success","note":"fee note","cost":0.4,"remain_money":9797.39,"total":28,"total_page":2,"data":[{"url":"https://example.com/hot","mp_nickname":"作者号","title":"爆文标题","pub_time":"2026-05-17","wxid":"wx123","hot":98.5,"read_num":120000,"zan_num":4500,"cover":"https://example.com/cover.jpg","avg":30000,"category":"科技","fans":900000,"position":1,"is_original":"是","publish_type":"图文"}]})";
+  const auto parsed = client.parseArticlesFromJson(official, QStringLiteral("AI"));
+  QCOMPARE(parsed.size(), 1);
+  const auto& row = parsed.first();
+  QCOMPARE(row.title, QStringLiteral("爆文标题"));
+  QCOMPARE(row.accountName, QStringLiteral("作者号"));
+  QCOMPARE(row.author, QStringLiteral("作者号"));
+  QCOMPARE(row.url, QStringLiteral("https://example.com/hot"));
+  QCOMPARE(row.publishTime, QStringLiteral("2026-05-17"));
+  QCOMPARE(row.readCount, 120000);
+  QCOMPARE(row.likeCount, 4500);
+  QCOMPARE(row.avgReadCount, 30000);
+  QCOMPARE(row.fansCount, 900000);
+  QCOMPARE(row.position, 1);
+  QCOMPARE(row.wxid, QStringLiteral("wx123"));
+  QCOMPARE(row.category, QStringLiteral("科技"));
+  QCOMPARE(row.isOriginal, QStringLiteral("是"));
+  QCOMPARE(row.publishType, QStringLiteral("图文"));
+  QCOMPARE(row.coverUrl, QStringLiteral("https://example.com/cover.jpg"));
+  QCOMPARE(row.hotScore, 98.5);
+  QVERIFY(row.summary.contains(QStringLiteral("爆值")));
+}
+
+void CoreTest::appControllerCollectsHotTypicalAndExportsMultipleFormats() {
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
   AppController controller;
   QVERIFY(controller.initialize());
   QCOMPARE(controller.language(), QStringLiteral("zh"));
-  controller.setLanguage(QStringLiteral("en"));
-  QCOMPARE(controller.language(), QStringLiteral("en"));
-  QVERIFY(controller.trText(QStringLiteral("dashboard_title")).contains(QStringLiteral("Dashboard")));
-  controller.setLanguage(QStringLiteral("zh"));
-  QVERIFY(controller.trText(QStringLiteral("dashboard_title")).contains(QStringLiteral("仪表盘")));
-  QVERIFY(controller.hotTypicalParameterRows().join("\n").contains(QStringLiteral("pub_type")));
-  QVERIFY(controller.hotTypicalParameterRows().join("\n").contains(QStringLiteral("start_time")));
-  const QString preview = controller.hotTypicalPayloadPreview(
-      QStringLiteral("key-1"), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("7"), 1,
-      QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
-  QVERIFY(preview.contains(QStringLiteral("hot_typical_search")));
-  QVERIFY(preview.contains(QStringLiteral("\"category\": \"7\"")));
-  QVERIFY(preview.contains(QStringLiteral("\"end_time\": \"2026-05-17\"")));
+  QVERIFY(controller.runHotTypicalCollection(QString(), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("7"), 1,
+                                             QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17")) > 0);
+  const auto rows = controller.hotTypicalResultRows();
+  QVERIFY(!rows.isEmpty());
+  QVERIFY(rows.join("\n").contains(QStringLiteral("AI")));
+  const QString md = dir.filePath(QStringLiteral("hot.md"));
+  const QString xml = dir.filePath(QStringLiteral("hot.xml"));
+  const QString xls = dir.filePath(QStringLiteral("hot.xls"));
+  QVERIFY(controller.exportHotTypicalResults(md, QStringLiteral("md")));
+  QVERIFY(controller.exportHotTypicalResults(xml, QStringLiteral("xml")));
+  QVERIFY(controller.exportHotTypicalResults(xls, QStringLiteral("xls")));
+  QVERIFY(QFile::exists(md));
+  QVERIFY(QFile::exists(xml));
+  QVERIFY(QFile::exists(xls));
+  QFile xlsFile(xls);
+  QVERIFY(xlsFile.open(QIODevice::ReadOnly | QIODevice::Text));
+  QVERIFY(QString::fromUtf8(xlsFile.readAll()).contains(QStringLiteral("Workbook")));
 }
 
 void CoreTest::pluginRegistryExposesBuiltins() {

@@ -288,14 +288,37 @@ int AppController::runHotTypicalCollection(const QString& apiKey, const QString&
   QString error;
   int inserted = 0;
   const auto articles = client_.callHotTypicalSearchBlocking(QString(), key, task_keyword, pubType, category, qMax(1, page), startTime, endTime, &error);
+  hot_typical_results_ = articles;
   for (const auto& article : articles) {
     if (database_.upsertArticle(article)) ++inserted;
   }
   const QString params = hotTypicalPayloadPreview(key.isEmpty() ? QStringLiteral("[empty]") : QStringLiteral("[configured]"), task_keyword, pubType, category, qMax(1, page), startTime, endTime);
   database_.recordCollectionRun(0, client_.isConfigured(key) ? QStringLiteral("hot_typical_success") : QStringLiteral("hot_typical_mock_fallback"), inserted, params.left(500) + QStringLiteral(" ") + error);
-  setStatus(QStringLiteral("公众号爆文采集完成：%1 条").arg(inserted));
+  setStatus(QStringLiteral("爆文采集完成：%1 条").arg(inserted));
   emit dataChanged();
   return inserted;
+}
+
+QStringList AppController::hotTypicalResultRows() const {
+  QStringList rows;
+  for (const auto& a : hot_typical_results_) {
+    rows << QStringLiteral("%1｜%2｜%3｜爆值 %4｜阅读 %5｜点赞 %6｜均读 %7｜粉丝 %8｜%9")
+              .arg(a.title, a.accountName.isEmpty() ? a.author : a.accountName, a.publishTime)
+              .arg(a.hotScore, 0, 'f', 1).arg(a.readCount).arg(a.likeCount).arg(a.avgReadCount).arg(a.fansCount).arg(a.url);
+  }
+  return rows;
+}
+
+bool AppController::exportHotTypicalResults(const QString& path, const QString& format) {
+  QVector<Article> rows = hot_typical_results_.isEmpty() ? database_.listArticles() : hot_typical_results_;
+  const QString f = format.trimmed().toLower();
+  QString content;
+  if (f == QStringLiteral("xml")) content = export_service_.toXml(rows);
+  else if (f == QStringLiteral("xls") || f == QStringLiteral("xlsx") || f == QStringLiteral("excel")) content = export_service_.toSpreadsheetXml(rows);
+  else content = export_service_.toMarkdown(rows);
+  const bool ok = export_service_.writeTextFile(path, content);
+  setStatus(ok ? QStringLiteral("爆文结果导出完成") : QStringLiteral("爆文结果导出失败"));
+  return ok;
 }
 
 QStringList AppController::apiEndpointRows(const QString& categoryKeyword) const {

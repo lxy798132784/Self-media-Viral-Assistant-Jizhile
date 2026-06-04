@@ -13,5 +13,6 @@ class ExportService {
  public:
   QString toMarkdown(const QVector<Article>& articles) const;
   QString toXml(const QVector<Article>& articles) const;
+  QString toSpreadsheetXml(const QVector<Article>& articles) const;
   bool writeTextFile(const QString& path, const QString& content) const;
 };

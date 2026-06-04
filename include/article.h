@@ -17,4 +17,13 @@ struct Article {
   int likeCount = 0;
   int watchCount = 0;
   QString summary;
+  double hotScore = 0.0;
+  int avgReadCount = 0;
+  int fansCount = 0;
+  int position = 0;
+  QString wxid;
+  QString category;
+  QString isOriginal;
+  QString publishType;
+  QString coverUrl;
 };

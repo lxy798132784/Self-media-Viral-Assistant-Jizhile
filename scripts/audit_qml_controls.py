@@ -40,7 +40,7 @@ required_calls = [
 required_controls = [
     'text: "中文"', 'text: "English"',
     "id: hotKey", "id: hotKeyword", "id: hotPubType", "id: hotCategory", "id: hotPage", "id: hotStart", "id: hotEnd",
-    "root.t(\"preview_payload\")", "root.t(\"collect_hot\")",
+    "root.t(\"preview_payload\")", "采集并解析", "exportHotTypicalResults", "hotTypicalResultRows",
     "appController.language === \"en\"", "appController.language === \"zh\"",
 ]
 required_hot_params = ["key", "keyword", "pub_type", "category", "page", "start_time", "end_time"]

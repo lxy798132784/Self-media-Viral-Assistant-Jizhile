@@ -128,7 +128,16 @@ QVector<Article> ContentDataClient::mockSearchArticles(const QString& keyword, i
     a.readCount = 50000 + page * 3000 + i * 12000;
     a.likeCount = 800 + i * 260;
     a.watchCount = 300 + i * 120;
-    a.summary = QStringLiteral("Mock fallback：用于无 API Key 或开发环境，验证采集、入库、拆解、导出闭环。");
+    a.hotScore = 80.0 + i * 3.5;
+    a.avgReadCount = 28000 + i * 2000;
+    a.fansCount = 100000 + i * 30000;
+    a.position = i == 0 ? 1 : 2;
+    a.category = QStringLiteral("科技");
+    a.isOriginal = QStringLiteral("是");
+    a.publishType = QStringLiteral("图文");
+    a.coverUrl = QStringLiteral("mock://cover/%1").arg(i + 1);
+    a.wxid = QStringLiteral("mock_wx_%1").arg(i + 1);
+    a.summary = QStringLiteral("Mock fallback：用于无 Key 或开发环境，验证采集、入库、拆解、导出闭环。");
     rows.push_back(a);
   }
   return rows;
@@ -160,6 +169,16 @@ static int FirstInt(const QJsonObject& obj, std::initializer_list<const char*> k
   }
   return 0;
 }
+static double FirstDouble(const QJsonObject& obj, std::initializer_list<const char*> keys) {
+  for (const char* key : keys) {
+    const auto value = obj.value(QString::fromUtf8(key));
+    if (value.isDouble()) return value.toDouble();
+    if (value.isString()) {
+      bool ok = false; const double n = value.toString().remove(',').toDouble(&ok); if (ok) return n;
+    }
+  }
+  return 0.0;
+}
 static void CollectObjects(const QJsonValue& value, QVector<QJsonObject>* out) {
   if (value.isObject()) {
     const auto obj = value.toObject();
@@ -179,14 +198,27 @@ QVector<Article> ContentDataClient::parseArticlesFromJson(const QByteArray& json
   for (const auto& obj : objects) {
     Article a;
     a.title = FirstString(obj, {"title", "Title", "article_title", "nickname"});
-    a.author = FirstString(obj, {"author", "Author", "author_name"});
-    a.accountName = FirstString(obj, {"wx_name", "account_name", "nickname", "source"});
+    a.author = FirstString(obj, {"author", "Author", "author_name", "mp_nickname"});
+    a.accountName = FirstString(obj, {"mp_nickname", "wx_name", "account_name", "nickname", "source"});
     a.url = FirstString(obj, {"url", "link", "article_url", "content_url"});
-    a.publishTime = FirstString(obj, {"publish_time", "pub_time", "datetime", "date"});
+    a.publishTime = FirstString(obj, {"pub_time", "publish_time", "datetime", "date"});
     a.readCount = FirstInt(obj, {"read_num", "readCount", "read_count", "read"});
-    a.likeCount = FirstInt(obj, {"like_num", "likeCount", "like_count", "like"});
+    a.likeCount = FirstInt(obj, {"zan_num", "like_num", "likeCount", "like_count", "like"});
     a.watchCount = FirstInt(obj, {"watch_num", "old_like_num", "comment_count"});
+    a.hotScore = FirstDouble(obj, {"hot", "hotScore", "score"});
+    a.avgReadCount = FirstInt(obj, {"avg", "avg_read", "avgReadCount"});
+    a.fansCount = FirstInt(obj, {"fans", "fans_count", "fansCount"});
+    a.position = FirstInt(obj, {"position"});
+    a.wxid = FirstString(obj, {"wxid", "biz", "wechat_id"});
+    a.category = FirstString(obj, {"category", "category_name"});
+    a.isOriginal = FirstString(obj, {"is_original", "original"});
+    a.publishType = FirstString(obj, {"publish_type", "pub_type_name"});
+    a.coverUrl = FirstString(obj, {"cover", "cover_url", "thumb_url"});
     a.summary = FirstString(obj, {"digest", "summary", "desc", "description"});
+    if (a.summary.isEmpty() && (a.hotScore > 0 || a.avgReadCount > 0 || a.fansCount > 0)) {
+      a.summary = QStringLiteral("爆值 %1；平均阅读 %2；粉丝 %3；分类 %4；类型 %5")
+                    .arg(a.hotScore).arg(a.avgReadCount).arg(a.fansCount).arg(a.category, a.publishType);
+    }
     if (a.title.isEmpty()) a.title = QStringLiteral("%1 采集文章 %2").arg(keyword).arg(++fallback_index);
     if (a.url.isEmpty()) a.url = QStringLiteral("content-data://parsed/%1/%2").arg(keyword).arg(rows.size() + 1);
     rows.push_back(a);
@@ -201,7 +233,7 @@ QVector<Article> ContentDataClient::callEndpointBlocking(const QString& base_url
     if (error_message) *error_message = QStringLiteral("API Key empty, using mock fallback");
     return mockEndpointArticles(endpoint_path, keyword, page);
   }
-  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.content-data.com") : base_url.trimmed();
+  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://www.dajiala.com") : base_url.trimmed();
   const QString path = endpoint_path.startsWith('/') ? endpoint_path : QStringLiteral("/") + endpoint_path;
   const QString url = root + path;
   for (int attempt = 1; attempt <= 3; ++attempt) {
@@ -235,7 +267,7 @@ QVector<Article> ContentDataClient::callHotTypicalSearchBlocking(const QString& 
     if (error_message) *error_message = QStringLiteral("API Key empty, using hot typical mock fallback");
     return mockEndpointArticles(endpoint, keyword, page);
   }
-  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.content-data.com") : base_url.trimmed();
+  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://www.dajiala.com") : base_url.trimmed();
   const QString url = root + endpoint;
   const auto payload = buildHotTypicalSearchPayload(request);
   for (int attempt = 1; attempt <= 3; ++attempt) {
