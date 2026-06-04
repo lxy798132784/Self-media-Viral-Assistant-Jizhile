@@ -89,7 +89,7 @@ QString AppController::trText(const QString& key) const {
   if (key == QStringLiteral("run_task")) return en ? QStringLiteral("Run selected task") : QStringLiteral("运行选中任务");
   if (key == QStringLiteral("refresh_runs")) return en ? QStringLiteral("Refresh history") : QStringLiteral("刷新历史");
   if (key == QStringLiteral("load_samples")) return en ? QStringLiteral("Load sample data") : QStringLiteral("加载示例数据");
-  if (key == QStringLiteral("self_check")) return en ? QStringLiteral("Full self-test") : QStringLiteral("全流程自检");
+  if (key == QStringLiteral("self_check")) return en ? QStringLiteral("Status") : QStringLiteral("状态");
   if (key == QStringLiteral("collect_now")) return en ? QStringLiteral("Collect now") : QStringLiteral("立即采集");
   if (key == QStringLiteral("preview_payload")) return en ? QStringLiteral("Generate request preview") : QStringLiteral("生成请求预览");
   if (key == QStringLiteral("collect_hot")) return en ? QStringLiteral("Collect hot articles") : QStringLiteral("采集公众号爆文");
@@ -571,7 +571,7 @@ bool AppController::runFullSelfCheck(const QString& exportDir) {
     report.close();
   }
   const bool ok = endpoint_inserted > 0 && md_ok && xml_ok && report_export_ok && report_ok && QFile::exists(report_path);
-  setStatus(ok ? QStringLiteral("全流程自检完成") : QStringLiteral("全流程自检失败"));
+  setStatus(ok ? QStringLiteral("检查完成") : QStringLiteral("检查失败"));
   emit dataChanged();
   return ok;
 }
