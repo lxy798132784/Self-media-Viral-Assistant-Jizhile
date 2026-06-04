@@ -8,11 +8,11 @@ All notable changes to this project are summarized here.
 
 - Local-first C++20, Qt6, and QML desktop workspace.
 - SQLite content library, collection tasks, and run history.
-- Bundled Jizhilia API catalog browsing and endpoint collection.
+- Bundled Content Data Service catalog browsing and data path collection.
 - Safe sample fallback when credentials are not configured.
 - Markdown and XML export.
 - CTK-style Provider, Exporter, and Analyzer registry.
-- Interactive details for articles, endpoints, plugins, tasks, and run receipts.
+- Interactive details for articles, data paths, plugins, tasks, and run receipts.
 - Linux, Windows, and Docker delivery scripts.
 - QML control audit and documentation alignment audit.
 - Open-source documentation set with separate English and Chinese docs.
@@ -21,5 +21,5 @@ All notable changes to this project are summarized here.
 
 ### Fixed
 
-- Removed machine-specific absolute API catalog lookup from tests and runtime code.
-- Added installed data-path lookup for the bundled API index.
+- Removed machine-specific absolute data service catalog lookup from tests and runtime code.
+- Added installed data-path lookup for the bundled data service index.

@@ -6,7 +6,7 @@
 
 | 扩展点 | 用途 | 当前内置项 |
 |---|---|---|
-| Provider | 内容源接入。 | `provider:jizhilia` |
+| Provider | 内容源接入。 | `provider:content-data` |
 | Exporter | 输出格式生成。 | `exporter:markdown`、`exporter:xml` |
 | Analyzer | 报告与评分逻辑。 | `analyzer:hit-score` |
 

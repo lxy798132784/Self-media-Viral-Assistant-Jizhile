@@ -19,15 +19,15 @@
 
 ## Why this project exists
 
-Content teams often split their workflow across scraping tools, spreadsheets, note apps, and report templates. Media Hit Assistant connects the loop in one local desktop application:
+Content teams often split their workflow across scrdata serviceng tools, spreadsheets, note apps, and report templates. Media Hit Assistant connects the loop in one local desktop application:
 
-1. collect public-account articles by keyword or API endpoint;
+1. collect public-account articles by keyword or data service data path;
 2. store articles, collection tasks, and run history in SQLite;
 3. inspect hit signals such as reads, likes, and derived score;
 4. convert strong article patterns into topic ideas;
 5. export Markdown and XML artifacts for downstream workflows.
 
-The project is built as a C++20, Qt6, and QML desktop application with a CTK-style plugin surface. Provider APIs, exporters, and analyzers can evolve independently while the user workflow remains stable.
+The project is built as a C++20, Qt6, and QML desktop application with a CTK-style plugin surface. Provider data services, exporters, and analyzers can evolve independently while the user workflow remains stable.
 
 ## Preview
 
@@ -41,13 +41,13 @@ The project is built as a C++20, Qt6, and QML desktop application with a CTK-sty
 |---|---|
 | Dashboard | Quick collection, statistics, and full workflow self-test. |
 | Content Library | SQLite-backed article list with detail inspection and Markdown/XML export. |
-| API Catalog | Browse the bundled Jizhilia endpoint index, filter by category, and run collection by endpoint path. |
-| Hot Articles API | Dedicated page for `/fbmain/monitor/v3/hot_typical_search`; every documented parameter has an editable control. |
+| data service Catalog | Browse the bundled ContentData data path index, filter by category, and run collection by data path path. |
+| Hot Articles data service | Dedicated page for `/fbmain/monitor/v3/hot_typical_search`; every documented parameter has an editable control. |
 | Language Switch | The app UI can switch between Chinese and English instead of mixing languages in one label. |
 | Analysis Report | Generate hit scores, read/like summaries, and structured observations. |
 | Topic Recommendations | Convert high-performing content patterns into next-topic ideas. |
 | Plugins | CTK-style Provider, Exporter, and Analyzer registry with fail-closed dynamic-plugin scanning. |
-| Settings | API key, verify code, endpoint path, interval, run count, QPS, export directory, tasks, and run history. |
+| Settings | access key, verify code, data path path, interval, run count, QPS, export directory, tasks, and run history. |
 
 ## Quick start
 
@@ -90,14 +90,14 @@ The gate runs the build, CTest suite, offscreen self-test, export-artifact check
 
 ## Configuration
 
-Local tests do not require credentials. If no API key is configured, the app uses safe sample collection so the workflow remains testable without spending API quota.
+Local tests do not require credentials. If no access key is configured, the app uses safe sample collection so the workflow remains testable without spending data service quota.
 
 Configurable fields:
 
-- Jizhilia API key;
+- Content Data Service key;
 - verify code;
-- endpoint path;
-- Hot Articles API parameters: `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, `end_time`;
+- data path path;
+- Hot Articles data service parameters: `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, `end_time`;
 - UI language;
 - collection interval;
 - maximum run count;
@@ -111,9 +111,9 @@ Do not commit real credentials. Keep secrets in local settings or environment va
 ```text
 QML UI
   -> AppController (Q_INVOKABLE facade)
-      -> ConfigManager       local API and task settings
-      -> ApiCatalog          bundled Jizhilia endpoint index
-      -> JizhiliaClient      payloads, HTTP, parsing, retry/fallback
+      -> ConfigManager       local data service and task settings
+      -> ApiCatalog          bundled ContentData data path index
+      -> ContentDataClient      payloads, HTTP, parsing, retry/fallback
       -> DatabaseManager     SQLite articles, tasks, run history
       -> ExportService       Markdown and XML artifacts
       -> BuiltinPluginRegistry
@@ -152,7 +152,7 @@ docker build -t media-hit-assistant .
 docker run --rm media-hit-assistant
 ```
 
-The install target includes the executable, desktop metadata, icon, README, changelog, docs, bundled API index, and plugin drop-in directory.
+The install target includes the executable, desktop metadata, icon, README, changelog, docs, bundled data service index, and plugin drop-in directory.
 
 ## Repository layout
 
@@ -164,7 +164,7 @@ tests/          QtTest unit tests
 scripts/        build, package, and audit scripts
 packaging/      desktop entry, AppStream metadata, and icon
 docs/           English docs, Chinese docs, and assets
-vendor/         sanitized bundled Jizhilia API knowledge
+vendor/         sanitized bundled Content Data Service knowledge
 plugins/        plugin drop-in contract and metadata examples
 ```
 
@@ -215,8 +215,8 @@ Governance:
 
 - [x] SQLite content library, collection tasks, and run history.
 - [x] Markdown and XML export.
-- [x] Bundled API catalog and endpoint collection.
-- [x] Interactive details for articles, endpoints, plugins, tasks, and run receipts.
+- [x] Bundled data service catalog and data path collection.
+- [x] Interactive details for articles, data paths, plugins, tasks, and run receipts.
 - [x] CTK-style plugin registry and documented plugin drop-in contract.
 - [x] Linux, Windows, and Docker delivery scripts.
 - [x] Open-source governance files.
@@ -229,7 +229,7 @@ Governance:
 
 - No secrets are required for local tests.
 - Missing credentials trigger safe sample collection.
-- Vendor API examples are sanitized.
+- Vendor data service examples are sanitized.
 - Runtime artifacts, SQLite databases, build outputs, and package outputs are excluded from source delivery.
 
 See [SECURITY.md](SECURITY.md) for the reporting policy.

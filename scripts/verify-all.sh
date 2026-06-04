@@ -5,10 +5,12 @@ cd "$ROOT"
 cmake --build build -j"${JOBS:-2}"
 ctest --test-dir build --output-on-failure
 QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
+QT_QPA_PLATFORM=vnc QT_QUICK_BACKEND=software ./build/media-hit-assistant --qml-smoke
 python3 scripts/audit_qml_controls.py
 python3 scripts/audit_ui_help_tooltips.py
 python3 scripts/audit_devprompt_alignment.py
 python3 scripts/audit_release_workflow.py
+python3 scripts/audit_brand_privacy.py
 test -s /tmp/media-hit-self-test.md
 test -s /tmp/media-hit-self-test.xml
 timeout 8s env QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant || code=$?

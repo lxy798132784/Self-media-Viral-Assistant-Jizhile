@@ -28,23 +28,23 @@ struct HotTypicalRequest {
 };
 
 /**
- * @brief 极致了 API 客户端 / Jizhilia API client
+ * @brief 内容数据服务 客户端 / Content Data Service client
  *
  * @details 构造请求体、执行同步 HTTP POST、解析文章响应，并在未配置密钥时进入安全示例采集。
  *          Builds payloads, performs blocking HTTP POST calls, parses article responses, and falls back to safe sample collection when credentials are not configured.
  */
-class JizhiliaClient : public QObject {
+class ContentDataClient : public QObject {
   Q_OBJECT
  public:
-  explicit JizhiliaClient(QObject* parent = nullptr);
+  explicit ContentDataClient(QObject* parent = nullptr);
 
   /**
    * @brief 构造公众号文章搜索请求 / Build article-search payload
-   * @details 将关键词、页码、API key 和 verify code 转成极致了文章搜索接口需要的 JSON 字段。
+   * @details 将关键词、页码、API key 和 verify code 转成内容数据文章搜索接口需要的 JSON 字段。
    *          Converts keyword, page, API key, and verify code into the JSON fields expected by the article-search endpoint.
    * @param keyword 搜索关键词 / Search keyword
    * @param page 页码 / Page number
-   * @param api_key 极致了 API Key / Jizhilia API key
+   * @param api_key 内容数据服务 Key / Content Data Service key
    * @param verify_code 验证码 / Verification code
    * @return 请求 JSON / Request JSON object
    */
@@ -52,11 +52,11 @@ class JizhiliaClient : public QObject {
 
   /**
    * @brief 构造通用接口请求 / Build generic endpoint payload
-   * @details 兼容不同极致了 endpoint，保留常用分页与认证字段。
-   *          Provides a common payload shape for multiple Jizhilia endpoints with pagination and authentication fields.
+   * @details 兼容不同内容数据 endpoint，保留常用分页与认证字段。
+   *          Provides a common payload shape for multiple ContentData endpoints with pagination and authentication fields.
    * @param keyword 搜索关键词 / Search keyword
    * @param page 页码 / Page number
-   * @param api_key 极致了 API Key / Jizhilia API key
+   * @param api_key 内容数据服务 Key / Content Data Service key
    * @param verify_code 验证码 / Verification code
    * @return 请求 JSON / Request JSON object
    */
@@ -116,7 +116,7 @@ class JizhiliaClient : public QObject {
    * @details 配置有效时请求真实接口；未配置时返回示例数据并写入错误说明。
    *          Calls the real endpoint when configured; otherwise returns sample data and writes an explanatory message.
    * @param base_url API 根地址 / API base URL
-   * @param api_key 极致了 API Key / Jizhilia API key
+   * @param api_key 内容数据服务 Key / Content Data Service key
    * @param verify_code 验证码 / Verification code
    * @param keyword 关键词 / Keyword
    * @param page 页码 / Page number
@@ -131,7 +131,7 @@ class JizhiliaClient : public QObject {
    *          Combines base URL and endpoint path, then applies shared request, parsing, error handling, and sample fallback logic.
    * @param base_url API 根地址 / API base URL
    * @param endpoint_path 接口路径 / Endpoint path
-   * @param api_key 极致了 API Key / Jizhilia API key
+   * @param api_key 内容数据服务 Key / Content Data Service key
    * @param verify_code 验证码 / Verification code
    * @param keyword 关键词 / Keyword
    * @param page 页码 / Page number
@@ -168,7 +168,7 @@ class JizhiliaClient : public QObject {
    * @brief 判断是否配置 API Key / Check API key configuration
    * @details 空值或占位值视为未配置，系统会进入示例采集模式。
    *          Empty or placeholder values are treated as unconfigured, causing the app to use sample collection mode.
-   * @param api_key 极致了 API Key / Jizhilia API key
+   * @param api_key 内容数据服务 Key / Content Data Service key
    * @return 是否已配置 / Whether configured
    */
   bool isConfigured(const QString& api_key) const;

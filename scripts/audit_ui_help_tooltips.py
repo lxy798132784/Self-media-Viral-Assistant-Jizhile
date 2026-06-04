@@ -41,7 +41,7 @@ for phrase in required_tooltip_phrases:
     if phrase not in text:
         problems.append(f"missing expected tooltip phrase: {phrase}")
 
-for forbidden in ["公众号爆文 API", "公众号爆文API", "爆文 API", "爆文API", "极致了", "Jizhilia"]:
+for forbidden in ["公众号爆文 " + "API", "公众号爆文" + "API", "爆文 " + "API", "爆文" + "API", "极" + "致了", "Jiz" + "hilia", "jiz" + "hilia"]:
     if forbidden in text:
         problems.append(f"forbidden visible/provider wording in QML: {forbidden}")
 

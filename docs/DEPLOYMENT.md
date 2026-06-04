@@ -102,7 +102,7 @@ cmake --install build --prefix /tmp/media-hit-install
 /tmp/media-hit-install/bin/media-hit-assistant
 ```
 
-This keeps system directories untouched. It installs the executable, README, changelog, docs, icon, desktop metadata, plugin directory, and bundled API index under `/tmp/media-hit-install`.
+This keeps system directories untouched. It installs the executable, README, changelog, docs, icon, desktop metadata, plugin directory, and bundled data service index under `/tmp/media-hit-install`.
 
 ### Uninstall
 
@@ -243,4 +243,4 @@ There is no signed macOS package yet. Developers can build manually with Qt6 and
 
 ## Runtime data and credentials
 
-Local tests do not need credentials. If no API key is configured, the app uses safe sample collection. Real API keys must stay in local settings or environment variables and must not be committed to the repository.
+Local tests do not need credentials. If no access key is configured, the app uses safe sample collection. Real access keys must stay in local settings or environment variables and must not be committed to the repository.

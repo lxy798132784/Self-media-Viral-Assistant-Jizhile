@@ -38,7 +38,7 @@ def main() -> int:
     if "package-windows.ps1" not in text:
         failures.append("Windows job must invoke scripts/package-windows.ps1")
     windows_packager = (ROOT / "scripts" / "package-windows.ps1").read_text(encoding="utf-8")
-    for required in ["run-with-log.bat", "media-hit-assistant.log", "--self-test", "audit_ui_help_tooltips.py"]:
+    for required in ["run-with-log.bat", "media-hit-assistant.log", "--self-test", "--qml-smoke", "--qmldir", "audit_ui_help_tooltips.py", "audit_brand_privacy.py"]:
         if required not in windows_packager:
             failures.append(f"Windows packager must include diagnostic/self-test gate: {required}")
     if "package-linux.sh" not in text and "cmake --install" not in text:

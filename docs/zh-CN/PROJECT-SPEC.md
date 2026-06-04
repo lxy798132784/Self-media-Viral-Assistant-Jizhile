@@ -22,8 +22,8 @@
 |---|---|
 | 仪表盘 | 统计、快速采集、全流程自检。 |
 | 内容库 | 文章列表、文章详情、刷新、Markdown 导出、XML 导出。 |
-| 接口库 | 仓库内置极致了 API 索引、分类筛选、endpoint 详情、按 endpoint 采集。 |
-| 公众号爆文 API | 覆盖 `key`、`keyword`、`pub_type`、`category`、`page`、`start_time`、`end_time` 的可编辑控件。 |
+| 接口库 | 仓库内置内容数据服务 索引、分类筛选、endpoint 详情、按 endpoint 采集。 |
+| 公众号爆文 | 覆盖 `key`、`keyword`、`pub_type`、`category`、`page`、`start_time`、`end_time` 的可编辑控件。 |
 | 拆解报告 | 阅读、点赞、爆款评分、结构化观察。 |
 | 选题推荐 | 从内容库高表现文章生成选题。 |
 | 插件 | Provider、Exporter、Analyzer 注册表、描述详情和扫描报告。 |
@@ -34,7 +34,7 @@
 - 语言与构建：C++20、CMake。
 - 界面：Qt6、QML。
 - 持久化：SQLite。
-- API：极致了 endpoint 请求与仓库内置 API 目录。
+- API：内容数据 endpoint 请求与仓库内置 API 目录。
 - 扩展性：CTK 风格 Provider、Exporter、Analyzer 接口。
 - 导出：Markdown、XML。
 - 平台：Linux、Windows、Docker；源码对 x86_64 与 ARM64 Qt 构建保持中立。

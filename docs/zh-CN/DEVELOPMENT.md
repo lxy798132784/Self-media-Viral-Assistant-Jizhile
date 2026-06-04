@@ -43,8 +43,8 @@ plugins/        插件契约与元数据示例
 | 模块 | 职责 |
 |---|---|
 | `ConfigManager` | API Key、验证码、频率、次数、QPS 和导出目录。 |
-| `ApiCatalog` | 内置极致了 API 索引加载和查询。 |
-| `JizhiliaClient` | 请求体创建、HTTP 调用、JSON 解析、重试和回退。 |
+| `ApiCatalog` | 内置内容数据服务 索引加载和查询。 |
+| `ContentDataClient` | 请求体创建、HTTP 调用、JSON 解析、重试和回退。 |
 | `DatabaseManager` | SQLite schema、文章、任务和运行历史。 |
 | `ExportService` | Markdown 与 XML 输出。 |
 | `BuiltinPluginRegistry` | CTK 风格 Provider、Exporter、Analyzer 条目。 |
@@ -69,9 +69,9 @@ ctest --test-dir build --output-on-failure
 
 ## 新增 API endpoint
 
-1. 在 `vendor/jizhilia-api-knowledge/api-index.json` 中新增或更新 endpoint。
+1. 在 `vendor/content-data/api-index.json` 中新增或更新 endpoint。
 2. 通过 `ApiCatalog::findByCategory()` 或 `ApiCatalog::findByPath()` 暴露。
-3. 通过 `JizhiliaClient::callEndpointBlocking()` 采集。
+3. 通过 `ContentDataClient::callEndpointBlocking()` 采集。
 4. 添加 QtTest 断言覆盖 endpoint path 或请求体。
 5. 运行 `./scripts/verify-all.sh`。
 

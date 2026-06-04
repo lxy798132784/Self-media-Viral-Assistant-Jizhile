@@ -45,7 +45,8 @@ int main(int argc, char* argv[]) {
 
   AppController controller;
   controller.initialize();
-  if (args.contains("--screenshot")) {
+  const bool qmlSmoke = args.contains("--qml-smoke");
+  if (args.contains("--screenshot") || qmlSmoke) {
     controller.loadMockArticles();
   }
 
@@ -77,6 +78,14 @@ int main(int argc, char* argv[]) {
       QImage shot = window->grabWindow();
       if (shot.isNull() || !shot.save(output)) {
         QCoreApplication::exit(7);
+        return;
+      }
+      QCoreApplication::exit(0);
+    });
+  } else if (qmlSmoke) {
+    QTimer::singleShot(1200, &app, [&app, &engine]() {
+      if (engine.rootObjects().isEmpty()) {
+        QCoreApplication::exit(8);
         return;
       }
       QCoreApplication::exit(0);

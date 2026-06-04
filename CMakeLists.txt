@@ -16,7 +16,7 @@ qt_add_executable(media-hit-assistant
     include/app_controller.h
     include/config_manager.h
     include/database_manager.h
-    include/jizhilia_client.h
+    include/content_data_client.h
     src/main.cpp
     include/collection_task.h
     src/app_controller.cpp
@@ -24,7 +24,7 @@ qt_add_executable(media-hit-assistant
     src/api_catalog.cpp
     src/database_manager.cpp
     src/export_service.cpp
-    src/jizhilia_client.cpp
+    src/content_data_client.cpp
     src/plugin_interfaces.cpp
     resources/qml.qrc
 )
@@ -39,7 +39,7 @@ enable_testing()
 add_executable(unit_tests
     include/config_manager.h
     include/database_manager.h
-    include/jizhilia_client.h
+    include/content_data_client.h
     include/app_controller.h
     include/collection_task.h
     tests/test_core.cpp
@@ -48,7 +48,7 @@ add_executable(unit_tests
     src/api_catalog.cpp
     src/database_manager.cpp
     src/export_service.cpp
-    src/jizhilia_client.cpp
+    src/content_data_client.cpp
     src/plugin_interfaces.cpp
 )
 target_include_directories(unit_tests PRIVATE include)
@@ -64,4 +64,4 @@ install(FILES packaging/com.mediahit.Assistant.svg DESTINATION ${CMAKE_INSTALL_D
 install(FILES README.md LICENSE CHANGELOG.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/docs)
 install(DIRECTORY plugins/ DESTINATION ${CMAKE_INSTALL_DATADIR}/media-hit-assistant/plugins)
-install(FILES vendor/jizhilia-api-knowledge/api-index.json DESTINATION ${CMAKE_INSTALL_DATADIR}/media-hit-assistant/vendor)
+install(FILES vendor/content-data/api-index.json DESTINATION ${CMAKE_INSTALL_DATADIR}/media-hit-assistant/vendor/content-data)

@@ -6,7 +6,7 @@
 #include "api_catalog.h"
 #include "database_manager.h"
 #include "export_service.h"
-#include "jizhilia_client.h"
+#include "content_data_client.h"
 #include "plugin_interfaces.h"
 #include "app_controller.h"
 
@@ -102,7 +102,7 @@ void CoreTest::exportServiceCreatesMarkdownAndXml() {
 }
 
 void CoreTest::clientBuildsSearchPayload() {
-  JizhiliaClient client;
+  ContentDataClient client;
   QVERIFY(client.isConfigured(QStringLiteral("abc")));
   QVERIFY(!client.isConfigured(QString()));
   const auto payload = client.buildArticleSearchPayload(QStringLiteral("AI"), 2, QStringLiteral("key"), QStringLiteral("code"));
@@ -129,7 +129,7 @@ void CoreTest::clientBuildsSearchPayload() {
 }
 
 void CoreTest::clientBuildsHotTypicalPayload() {
-  JizhiliaClient client;
+  ContentDataClient client;
   const auto payload = client.buildHotTypicalSearchPayload(
       QStringLiteral("key-1"), QStringLiteral("AI"), QStringLiteral("5"), QStringLiteral("7"), 2,
       QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
@@ -145,7 +145,7 @@ void CoreTest::clientBuildsHotTypicalPayload() {
 }
 
 void CoreTest::clientValidatesOfficialHotTypicalModel() {
-  JizhiliaClient client;
+  ContentDataClient client;
   HotTypicalRequest request;
   request.key = QStringLiteral("official-key");
   request.keyword = QStringLiteral("AI");
@@ -210,7 +210,7 @@ void CoreTest::appControllerSupportsLanguageAndHotTypicalApi() {
 void CoreTest::pluginRegistryExposesBuiltins() {
   BuiltinPluginRegistry registry;
   const auto plugins = registry.plugins();
-  QVERIFY(plugins.contains(QStringLiteral("provider:jizhilia")));
+  QVERIFY(plugins.contains(QStringLiteral("provider:content-data")));
   QVERIFY(plugins.contains(QStringLiteral("exporter:markdown")));
   QVERIFY(plugins.contains(QStringLiteral("exporter:xml")));
   QVERIFY(!registry.dynamicPluginHints(QStringLiteral("plugins")).isEmpty());
@@ -231,7 +231,7 @@ void CoreTest::pluginRegistryScansDynamicPluginsFailClosed() {
   QVERIFY(root.mkpath("providers"));
   QVERIFY(root.mkpath("exporters"));
   QVERIFY(root.mkpath("analyzers"));
-  QFile provider(root.filePath("providers/jizhilia-provider.json"));
+  QFile provider(root.filePath("providers/content-data-provider.json"));
   QVERIFY(provider.open(QIODevice::WriteOnly | QIODevice::Text));
   provider.write(R"({"id":"provider:demo","name":"Demo Provider","kind":"provider"})");
   provider.close();
@@ -241,13 +241,13 @@ void CoreTest::pluginRegistryScansDynamicPluginsFailClosed() {
   invalid.close();
   BuiltinPluginRegistry registry;
   const auto rows = registry.plugins(dir.path());
-  QVERIFY(rows.contains(QStringLiteral("provider:jizhilia")));
+  QVERIFY(rows.contains(QStringLiteral("provider:content-data")));
   QVERIFY(rows.contains(QStringLiteral("provider:demo")));
   QVERIFY(registry.dynamicPluginScanReport(dir.path()).join("\n").contains(QStringLiteral("blocked")));
 }
 
 void CoreTest::clientClassifiesApiErrorsAndSupportsSmokePlan() {
-  JizhiliaClient client;
+  ContentDataClient client;
   QCOMPARE(client.classifyApiError(401, QString()), QStringLiteral("authentication_error"));
   QCOMPARE(client.classifyApiError(429, QString()), QStringLiteral("rate_limited"));
   QCOMPARE(client.classifyApiError(402, QStringLiteral("余额不足")), QStringLiteral("quota_or_balance_error"));

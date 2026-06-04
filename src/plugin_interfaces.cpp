@@ -7,7 +7,7 @@
 
 QStringList BuiltinPluginRegistry::plugins() const {
   return {
-      QStringLiteral("provider:jizhilia"),
+      QStringLiteral("provider:content-data"),
       QStringLiteral("exporter:markdown"),
       QStringLiteral("exporter:xml"),
       QStringLiteral("analyzer:hit-score"),
@@ -36,7 +36,7 @@ QStringList BuiltinPluginRegistry::pluginDescriptors(const QString& plugin_dir) 
 
 QString BuiltinPluginRegistry::pluginDescriptor(const QString& plugin_id, const QString& plugin_dir) const {
   const QString id = plugin_id.trimmed();
-  if (id == QStringLiteral("provider:jizhilia")) return QStringLiteral("provider:jizhilia｜极致了内容采集｜支持真实 API 与本地示例回退");
+  if (id == QStringLiteral("provider:content-data")) return QStringLiteral("provider:content-data｜内容采集｜支持在线数据源与本地示例回退");
   if (id == QStringLiteral("exporter:markdown")) return QStringLiteral("exporter:markdown｜Markdown 导出｜生成可编辑内容归档");
   if (id == QStringLiteral("exporter:xml")) return QStringLiteral("exporter:xml｜XML 导出｜生成结构化机器可读归档");
   if (id == QStringLiteral("analyzer:hit-score")) return QStringLiteral("analyzer:hit-score｜爆款评分分析｜阅读/点赞/在看综合打分");

@@ -12,7 +12,7 @@ struct ApiEndpoint {
 };
 
 /**
- * @brief 极致了 API 文档索引 / Jizhilia API documentation index
+ * @brief 内容数据索引 / Content data index
  *
  * @details 读取本地 api-index.json，为新项目提供接口清单。
  *          Loads local api-index.json and exposes endpoint metadata for the app.

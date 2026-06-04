@@ -4,7 +4,7 @@
 #include "config_manager.h"
 #include "database_manager.h"
 #include "export_service.h"
-#include "jizhilia_client.h"
+#include "content_data_client.h"
 #include "api_catalog.h"
 #include "plugin_interfaces.h"
 
@@ -85,7 +85,7 @@ class AppController : public QObject {
   ConfigManager config_;
   DatabaseManager database_;
   ExportService export_service_;
-  JizhiliaClient client_;
+  ContentDataClient client_;
   ApiCatalog api_catalog_;
   BuiltinPluginRegistry plugin_registry_;
 };

@@ -1,4 +1,4 @@
-#include "jizhilia_client.h"
+#include "content_data_client.h"
 #include <QDate>
 #include <QEventLoop>
 #include <QJsonArray>
@@ -11,8 +11,8 @@
 #include <QRegularExpression>
 #include <QTimer>
 
-JizhiliaClient::JizhiliaClient(QObject* parent) : QObject(parent) {}
-QJsonObject JizhiliaClient::buildArticleSearchPayload(const QString& keyword, int page, const QString& api_key, const QString& verify_code) const {
+ContentDataClient::ContentDataClient(QObject* parent) : QObject(parent) {}
+QJsonObject ContentDataClient::buildArticleSearchPayload(const QString& keyword, int page, const QString& api_key, const QString& verify_code) const {
   QJsonObject payload;
   payload["keyword"] = keyword;
   payload["currentPage"] = qMax(1, page);
@@ -23,14 +23,14 @@ QJsonObject JizhiliaClient::buildArticleSearchPayload(const QString& keyword, in
   payload["BusinessType"] = 2;
   return payload;
 }
-QJsonObject JizhiliaClient::buildGenericPayload(const QString& keyword, int page, const QString& api_key, const QString& verify_code) const {
+QJsonObject ContentDataClient::buildGenericPayload(const QString& keyword, int page, const QString& api_key, const QString& verify_code) const {
   QJsonObject payload = buildArticleSearchPayload(keyword, page, api_key, verify_code);
   payload["page"] = qMax(1, page);
   payload["query"] = keyword;
   payload["pageSize"] = 20;
   return payload;
 }
-QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const QString& api_key, const QString& keyword, const QString& pub_type,
+QJsonObject ContentDataClient::buildHotTypicalSearchPayload(const QString& api_key, const QString& keyword, const QString& pub_type,
                                                          const QString& category, int page, const QString& start_time,
                                                          const QString& end_time) const {
   HotTypicalRequest request;
@@ -44,7 +44,7 @@ QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const QString& api_key,
   request.end_time = end_time.trimmed();
   return buildHotTypicalSearchPayload(request);
 }
-QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const HotTypicalRequest& request) const {
+QJsonObject ContentDataClient::buildHotTypicalSearchPayload(const HotTypicalRequest& request) const {
   QJsonObject payload;
   payload["key"] = request.key.trimmed();
   payload["pub_type"] = pubTypeToApiValue(request.pub_type);
@@ -60,10 +60,10 @@ QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const HotTypicalRequest
   }
   return payload;
 }
-QString JizhiliaClient::pubTypeToApiValue(PubType pub_type) const {
+QString ContentDataClient::pubTypeToApiValue(PubType pub_type) const {
   return QString::number(static_cast<int>(pub_type));
 }
-std::optional<PubType> JizhiliaClient::pubTypeFromApiValue(const QString& api_value) const {
+std::optional<PubType> ContentDataClient::pubTypeFromApiValue(const QString& api_value) const {
   bool ok = false;
   const int value = api_value.trimmed().toInt(&ok);
   if (!ok) return std::nullopt;
@@ -77,7 +77,7 @@ std::optional<PubType> JizhiliaClient::pubTypeFromApiValue(const QString& api_va
     default: return std::nullopt;
   }
 }
-bool JizhiliaClient::validateHotTypicalRequest(const HotTypicalRequest& request, QString* error_message) const {
+bool ContentDataClient::validateHotTypicalRequest(const HotTypicalRequest& request, QString* error_message) const {
   if (request.key.trimmed().isEmpty()) {
     if (error_message) *error_message = QStringLiteral("key is required");
     return false;
@@ -111,11 +111,11 @@ bool JizhiliaClient::validateHotTypicalRequest(const HotTypicalRequest& request,
   }
   return true;
 }
-QStringList JizhiliaClient::hotTypicalParameterNames() const {
+QStringList ContentDataClient::hotTypicalParameterNames() const {
   return {QStringLiteral("key"), QStringLiteral("keyword"), QStringLiteral("pub_type"), QStringLiteral("category"),
           QStringLiteral("page"), QStringLiteral("start_time"), QStringLiteral("end_time")};
 }
-QVector<Article> JizhiliaClient::mockSearchArticles(const QString& keyword, int page) const {
+QVector<Article> ContentDataClient::mockSearchArticles(const QString& keyword, int page) const {
   QVector<Article> rows;
   const QString clean = keyword.trimmed().isEmpty() ? QStringLiteral("公众号") : keyword.trimmed();
   for (int i = 0; i < 5; ++i) {
@@ -123,7 +123,7 @@ QVector<Article> JizhiliaClient::mockSearchArticles(const QString& keyword, int 
     a.title = QStringLiteral("%1 爆款样本 %2：高点击标题与强转发结构").arg(clean).arg((page - 1) * 5 + i + 1);
     a.author = QStringLiteral("Mock Analyst");
     a.accountName = QStringLiteral("%1观察").arg(clean);
-    a.url = QStringLiteral("mock://jizhilia/%1/%2").arg(clean).arg((page - 1) * 5 + i + 1);
+    a.url = QStringLiteral("mock://content-data/%1/%2").arg(clean).arg((page - 1) * 5 + i + 1);
     a.publishTime = QDate::currentDate().toString(Qt::ISODate);
     a.readCount = 50000 + page * 3000 + i * 12000;
     a.likeCount = 800 + i * 260;
@@ -133,11 +133,11 @@ QVector<Article> JizhiliaClient::mockSearchArticles(const QString& keyword, int 
   }
   return rows;
 }
-QVector<Article> JizhiliaClient::mockEndpointArticles(const QString& endpoint_path, const QString& keyword, int page) const {
+QVector<Article> ContentDataClient::mockEndpointArticles(const QString& endpoint_path, const QString& keyword, int page) const {
   auto rows = mockSearchArticles(keyword, page);
   for (auto& row : rows) {
     row.summary = QStringLiteral("接口 %1 的本地样本：%2").arg(endpoint_path, row.summary);
-    row.url = QStringLiteral("mock://jizhilia%1/%2/%3").arg(endpoint_path, keyword).arg(page);
+    row.url = QStringLiteral("mock://content-data%1/%2/%3").arg(endpoint_path, keyword).arg(page);
   }
   return rows;
 }
@@ -169,7 +169,7 @@ static void CollectObjects(const QJsonValue& value, QVector<QJsonObject>* out) {
     for (const auto& child : value.toArray()) CollectObjects(child, out);
   }
 }
-QVector<Article> JizhiliaClient::parseArticlesFromJson(const QByteArray& json, const QString& keyword) const {
+QVector<Article> ContentDataClient::parseArticlesFromJson(const QByteArray& json, const QString& keyword) const {
   QVector<Article> rows;
   const auto doc = QJsonDocument::fromJson(json);
   if (doc.isNull()) return rows;
@@ -188,20 +188,20 @@ QVector<Article> JizhiliaClient::parseArticlesFromJson(const QByteArray& json, c
     a.watchCount = FirstInt(obj, {"watch_num", "old_like_num", "comment_count"});
     a.summary = FirstString(obj, {"digest", "summary", "desc", "description"});
     if (a.title.isEmpty()) a.title = QStringLiteral("%1 采集文章 %2").arg(keyword).arg(++fallback_index);
-    if (a.url.isEmpty()) a.url = QStringLiteral("jizhilia://parsed/%1/%2").arg(keyword).arg(rows.size() + 1);
+    if (a.url.isEmpty()) a.url = QStringLiteral("content-data://parsed/%1/%2").arg(keyword).arg(rows.size() + 1);
     rows.push_back(a);
   }
   return rows;
 }
-QVector<Article> JizhiliaClient::searchArticlesBlocking(const QString& base_url, const QString& api_key, const QString& verify_code, const QString& keyword, int page, QString* error_message) const {
+QVector<Article> ContentDataClient::searchArticlesBlocking(const QString& base_url, const QString& api_key, const QString& verify_code, const QString& keyword, int page, QString* error_message) const {
   return callEndpointBlocking(base_url, QStringLiteral("/fbmain/monitor/v3/web_search"), api_key, verify_code, keyword, page, error_message);
 }
-QVector<Article> JizhiliaClient::callEndpointBlocking(const QString& base_url, const QString& endpoint_path, const QString& api_key, const QString& verify_code, const QString& keyword, int page, QString* error_message) const {
+QVector<Article> ContentDataClient::callEndpointBlocking(const QString& base_url, const QString& endpoint_path, const QString& api_key, const QString& verify_code, const QString& keyword, int page, QString* error_message) const {
   if (!isConfigured(api_key)) {
     if (error_message) *error_message = QStringLiteral("API Key empty, using mock fallback");
     return mockEndpointArticles(endpoint_path, keyword, page);
   }
-  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.jizhilia.com") : base_url.trimmed();
+  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.content-data.com") : base_url.trimmed();
   const QString path = endpoint_path.startsWith('/') ? endpoint_path : QStringLiteral("/") + endpoint_path;
   const QString url = root + path;
   for (int attempt = 1; attempt <= 3; ++attempt) {
@@ -212,7 +212,7 @@ QVector<Article> JizhiliaClient::callEndpointBlocking(const QString& base_url, c
   }
   return mockEndpointArticles(endpoint_path, keyword, page);
 }
-QVector<Article> JizhiliaClient::callHotTypicalSearchBlocking(const QString& base_url, const QString& api_key, const QString& keyword,
+QVector<Article> ContentDataClient::callHotTypicalSearchBlocking(const QString& base_url, const QString& api_key, const QString& keyword,
                                                               const QString& pub_type, const QString& category, int page,
                                                               const QString& start_time, const QString& end_time,
                                                               QString* error_message) const {
@@ -235,7 +235,7 @@ QVector<Article> JizhiliaClient::callHotTypicalSearchBlocking(const QString& bas
     if (error_message) *error_message = QStringLiteral("API Key empty, using hot typical mock fallback");
     return mockEndpointArticles(endpoint, keyword, page);
   }
-  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.jizhilia.com") : base_url.trimmed();
+  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.content-data.com") : base_url.trimmed();
   const QString url = root + endpoint;
   const auto payload = buildHotTypicalSearchPayload(request);
   for (int attempt = 1; attempt <= 3; ++attempt) {
@@ -246,9 +246,9 @@ QVector<Article> JizhiliaClient::callHotTypicalSearchBlocking(const QString& bas
   }
   return mockEndpointArticles(endpoint, keyword, page);
 }
-bool JizhiliaClient::isRetryableStatus(int status_code) const { return status_code == -1 || status_code == 500 || status_code == 103 || status_code == 104 || status_code == 50000; }
-int JizhiliaClient::retryDelayMs(int attempt) const { const int safe_attempt = qBound(1, attempt, 5); return 1000 * (1 << (safe_attempt - 1)); }
-QString JizhiliaClient::classifyApiError(int status_code, const QString& error_text) const {
+bool ContentDataClient::isRetryableStatus(int status_code) const { return status_code == -1 || status_code == 500 || status_code == 103 || status_code == 104 || status_code == 50000; }
+int ContentDataClient::retryDelayMs(int attempt) const { const int safe_attempt = qBound(1, attempt, 5); return 1000 * (1 << (safe_attempt - 1)); }
+QString ContentDataClient::classifyApiError(int status_code, const QString& error_text) const {
   const QString text = error_text.toLower();
   if (status_code == -1 || text.contains(QStringLiteral("timeout")) || text.contains(QStringLiteral("timed out"))) return QStringLiteral("network_timeout");
   if (status_code == 401 || text.contains(QStringLiteral("unauthorized")) || text.contains(QStringLiteral("invalid token"))) return QStringLiteral("authentication_error");
@@ -258,7 +258,7 @@ QString JizhiliaClient::classifyApiError(int status_code, const QString& error_t
   if (status_code >= 500) return QStringLiteral("server_error");
   return QStringLiteral("unknown_error");
 }
-QString JizhiliaClient::hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
+QString ContentDataClient::hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
                                             const QString& category, int page, const QString& start_time,
                                             const QString& end_time) const {
   QJsonObject root;
@@ -269,8 +269,8 @@ QString JizhiliaClient::hotTypicalSmokePlan(const QString& apiKey, const QString
   root["payload"] = buildHotTypicalSearchPayload(apiKey, keyword, pubType, category, page, start_time, end_time);
   return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
 }
-bool JizhiliaClient::isConfigured(const QString& api_key) const { return !api_key.trimmed().isEmpty(); }
-QByteArray JizhiliaClient::postJsonBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
+bool ContentDataClient::isConfigured(const QString& api_key) const { return !api_key.trimmed().isEmpty(); }
+QByteArray ContentDataClient::postJsonBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
   QNetworkAccessManager manager;
   QNetworkRequest request{QUrl(url)};
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -288,7 +288,7 @@ QByteArray JizhiliaClient::postJsonBlocking(const QString& url, const QJsonObjec
   return data;
 }
 
-QByteArray JizhiliaClient::postMultipartBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
+QByteArray ContentDataClient::postMultipartBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
   QNetworkAccessManager manager;
   QNetworkRequest request{QUrl(url)};
   auto* multi_part = new QHttpMultiPart(QHttpMultiPart::FormDataType);

@@ -20,7 +20,7 @@ A complete source release should include:
 
 - C++20 / Qt6 / QML source code.
 - SQLite schema and local-first workflow.
-- Sanitized Jizhilia API knowledge under `vendor/`.
+- Sanitized Content Data Service knowledge under `vendor/`.
 - Linux desktop metadata and icon under `packaging/`.
 - Open-source governance files.
 - Documentation under `docs/`.

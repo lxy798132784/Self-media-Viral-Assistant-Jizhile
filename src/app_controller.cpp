@@ -221,7 +221,7 @@ QStringList AppController::hotTypicalParameterRows() const {
           QStringLiteral("End date | required | YYYY-MM-DD")};
   }
   return {
-      QStringLiteral("key｜必填｜字符串｜极致了 key"),
+      QStringLiteral("key｜必填｜字符串｜内容数据 key"),
       QStringLiteral("keyword｜可选｜字符串｜关键词，为空搜索全部"),
       QStringLiteral("pub_type｜必填｜枚举｜0 图文，5 纯视频，7 纯音乐，8 纯图片，10 纯文字，11 转载文章"),
       QStringLiteral("category｜必填｜枚举｜0 全部，1 国际，2 体育，3 娱乐，4 社会，5 财经，6 时事，7 科技，8 情感，9 汽车，10 教育，11 时尚，12 游戏，13 军事，14 旅游，15 美食，16 文化，17 健康，18 搞笑，19 家居，20 动漫，21 宠物，22 母婴，23 星座，24 历史，25 音乐，26 未分类，27 综合，28 职场，29 三农，30 养老"),

@@ -13,7 +13,7 @@ AppController
         |
         +-- ConfigManager       local configuration
         +-- ApiCatalog          bundled endpoint index
-        +-- JizhiliaClient      payloads, HTTP, parsing, retry, fallback
+        +-- ContentDataClient      payloads, HTTP, parsing, retry, fallback
         +-- DatabaseManager     SQLite schema and queries
         +-- ExportService       Markdown and XML output
         +-- BuiltinPluginRegistry
@@ -44,8 +44,8 @@ The visible interface is organized around user workflows rather than implementat
 | Service | Responsibility |
 |---|---|
 | `ConfigManager` | Local API and task settings. |
-| `ApiCatalog` | Locate and parse the bundled Jizhilia endpoint index. |
-| `JizhiliaClient` | Build payloads, run HTTP calls, parse JSON, classify errors, retry, and fallback. |
+| `ApiCatalog` | Locate and parse the bundled ContentData endpoint index. |
+| `ContentDataClient` | Build payloads, run HTTP calls, parse JSON, classify errors, retry, and fallback. |
 | `DatabaseManager` | Store articles, collection tasks, and run history in SQLite. |
 | `ExportService` | Render Markdown and XML artifacts. |
 | `BuiltinPluginRegistry` | Expose Provider, Exporter, and Analyzer entries. |
@@ -62,7 +62,7 @@ The database is local to the user's app data directory and is not part of source
 
 ## API catalog path strategy
 
-The endpoint index is bundled under `vendor/jizhilia-api-knowledge/api-index.json`. Tests and runtime use repository-relative lookup first, then the compile-time source directory, then installed data paths. This avoids CI failures caused by absolute local paths.
+The endpoint index is bundled under `vendor/content-data/api-index.json`. Tests and runtime use repository-relative lookup first, then the compile-time source directory, then installed data paths. This avoids CI failures caused by absolute local paths.
 
 ## Error handling and fallback
 

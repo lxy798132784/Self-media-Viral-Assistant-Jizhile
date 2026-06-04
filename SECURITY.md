@@ -7,7 +7,7 @@ This project is a local-first desktop application. Security reports should focus
 ## Secrets
 
 - Do not commit API keys, GitHub tokens, private URLs, runtime databases, generated packages, or build outputs.
-- Keep Jizhilia credentials in local settings or environment variables.
+- Keep ContentData credentials in local settings or environment variables.
 - Vendor API examples must remain sanitized.
 - CI and local tests must pass without real credentials.
 

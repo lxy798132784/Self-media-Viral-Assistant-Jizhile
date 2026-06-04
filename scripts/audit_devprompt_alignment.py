@@ -46,7 +46,7 @@ for rel in chinese_docs:
         sys.exit(1)
 
 combined = "\n".join(read(p) for p in english_docs + chinese_docs + [
-    "include/jizhilia_client.h",
+    "include/content_data_client.h",
     "include/config_manager.h",
     "include/plugin_interfaces.h",
     "include/api_catalog.h",
@@ -62,7 +62,7 @@ required_terms = {
     "QML": r"QML",
     "CTK": r"CTK",
     "SQLite": r"SQLite",
-    "Jizhilia API": r"Jizhilia|极致了",
+    "Content Data Service": r"ContentData|内容数据",
     "frequency": r"frequency|频率|interval",
     "run count": r"run count|次数|maxRuns",
     "API params": r"verify|verifycode|验证码|api key|API Key",
@@ -85,14 +85,14 @@ required_terms = {
     "Chinese docs": r"docs/zh-CN/PROJECT-SPEC.md|开发指南|架构说明|使用示例",
     "language switch": r"setLanguage|Language Switch|语言切换|language",
     "hot typical API": r"hot_typical_search|pub_type|category|start_time|end_time",
-    "bundled catalog": r"vendor/jizhilia-api-knowledge/api-index.json|defaultIndexPath|loadDefault",
+    "bundled catalog": r"vendor/content-data/api-index.json|defaultIndexPath|loadDefault",
 }
 missing = [name for name, pattern in required_terms.items() if not re.search(pattern, combined, re.I)]
 if missing:
     print("DevPrompt alignment failed: missing " + ", ".join(missing))
     sys.exit(1)
 
-for rel in ["include/jizhilia_client.h", "include/config_manager.h", "include/plugin_interfaces.h", "include/api_catalog.h"]:
+for rel in ["include/content_data_client.h", "include/config_manager.h", "include/plugin_interfaces.h", "include/api_catalog.h"]:
     text = read(rel)
     if text.count("@brief") < 1 or not re.search(r"[\u4e00-\u9fff]", text) or not re.search(r"[A-Za-z]", text):
         print(f"DevPrompt alignment failed: {rel} lacks bilingual brief comments")
@@ -100,7 +100,7 @@ for rel in ["include/jizhilia_client.h", "include/config_manager.h", "include/pl
 
 for rel in ["tests/test_core.cpp", "src/app_controller.cpp"]:
     text = read(rel)
-    if "/home/pi/dev/jizhilia-api-knowledge" in text:
+    if "/home/pi/dev/content-data" in text:
         print(f"DevPrompt alignment failed: machine-specific API catalog path remains in {rel}")
         sys.exit(1)
 

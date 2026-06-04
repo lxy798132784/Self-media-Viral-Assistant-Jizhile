@@ -43,8 +43,8 @@ plugins/        plugin contract and metadata examples
 | Module | Responsibility |
 |---|---|
 | `ConfigManager` | API key, verify code, interval, run count, QPS, and export directory. |
-| `ApiCatalog` | Bundled Jizhilia API index loading and search. |
-| `JizhiliaClient` | Payload creation, HTTP call, JSON parsing, retry, and fallback. |
+| `ApiCatalog` | Bundled Content Data Service index loading and search. |
+| `ContentDataClient` | Payload creation, HTTP call, JSON parsing, retry, and fallback. |
 | `DatabaseManager` | SQLite schema, articles, tasks, and run history. |
 | `ExportService` | Markdown and XML output. |
 | `BuiltinPluginRegistry` | CTK-style Provider, Exporter, and Analyzer entries. |
@@ -77,9 +77,9 @@ The full gate includes:
 
 ## Adding a new API endpoint
 
-1. Add or update the endpoint entry in `vendor/jizhilia-api-knowledge/api-index.json`.
+1. Add or update the endpoint entry in `vendor/content-data/api-index.json`.
 2. Use `ApiCatalog::findByCategory()` or `ApiCatalog::findByPath()` to expose it.
-3. Use `JizhiliaClient::callEndpointBlocking()` for collection.
+3. Use `ContentDataClient::callEndpointBlocking()` for collection.
 4. Add a QtTest assertion covering the endpoint path or payload.
 5. Run `./scripts/verify-all.sh`.
 

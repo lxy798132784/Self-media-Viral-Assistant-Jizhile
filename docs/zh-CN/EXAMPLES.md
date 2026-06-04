@@ -54,9 +54,9 @@ QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
 
 默认自检产物会写入 `/tmp`。
 
-## 使用公众号爆文 API 页面
+## 使用公众号爆文 页面
 
-1. 打开公众号爆文 API 页面。
+1. 打开公众号爆文 页面。
 2. 填写 `key`、`keyword`、`pub_type`、`category`、`page`、`start_time`、`end_time`。
 3. 生成请求预览。
 4. 运行采集。没有凭据时会进入安全示例回退。

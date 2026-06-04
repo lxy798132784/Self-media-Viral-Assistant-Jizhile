@@ -5,8 +5,8 @@
 /**
  * @brief 应用配置管理器 / Application configuration manager
  *
- * @details 管理极致了 API Key、验证码、采集频率、次数和限速等设置。
- *          Manages Jizhilia API key, verify code, collection frequency, count, and rate limit settings.
+ * @details 管理内容数据服务 Key、验证码、采集频率、次数和限速等设置。
+ *          Manages Content Data Service key, verify code, collection frequency, count, and rate limit settings.
  */
 class ConfigManager : public QObject {
   Q_OBJECT

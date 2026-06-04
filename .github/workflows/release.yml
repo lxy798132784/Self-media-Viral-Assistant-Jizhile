@@ -43,7 +43,7 @@ jobs:
           test -x "$ASSET_ROOT/usr/bin/media-hit-assistant"
           test -s "$ASSET_ROOT/usr/share/doc/MediaHitAssistant/README.md"
           test -s "$ASSET_ROOT/usr/share/doc/MediaHitAssistant/docs/README.zh-CN.md"
-          test -s "$ASSET_ROOT/usr/share/media-hit-assistant/vendor/api-index.json"
+          test -s "$ASSET_ROOT/usr/share/media-hit-assistant/vendor/content-data/api-index.json"
           tar -czf "${ASSET_ROOT}.tar.gz" "$ASSET_ROOT"
           mkdir -p release-out
           mv "${ASSET_ROOT}.tar.gz" release-out/
@@ -110,7 +110,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           git archive --format=tar.gz --prefix="media-hit-assistant-${VERSION}/" HEAD > "release-assets/media-hit-assistant-${VERSION}-source.tar.gz"
           git archive --format=zip --prefix="media-hit-assistant-${VERSION}/" HEAD > "release-assets/media-hit-assistant-${VERSION}-source.zip"
-          zip -r "release-assets/media-hit-assistant-${VERSION}-docs.zip" README.md LICENSE CHANGELOG.md docs plugins vendor/jizhilia-api-knowledge/api-index.json
+          zip -r "release-assets/media-hit-assistant-${VERSION}-docs.zip" README.md LICENSE CHANGELOG.md docs/DEPLOYMENT.md docs/README.zh-CN.md docs/zh-CN/DEPLOYMENT.md plugins vendor/content-data/api-index.json
           cat > release-assets/RELEASE_NOTES.md <<EOF
           # Media Hit Assistant ${GITHUB_REF_NAME}
 

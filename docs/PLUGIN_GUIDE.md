@@ -6,7 +6,7 @@ Media Hit Assistant exposes CTK-style extension points for providers, exporters,
 
 | Extension point | Purpose | Current built-ins |
 |---|---|---|
-| Provider | Content source integration. | `provider:jizhilia` |
+| Provider | Content source integration. | `provider:content-data` |
 | Exporter | Output format generation. | `exporter:markdown`, `exporter:xml` |
 | Analyzer | Report and scoring logic. | `analyzer:hit-score` |
 

@@ -8,14 +8,14 @@
 #include <QSet>
 
 QString ApiCatalog::defaultIndexPath() const {
-  const QString rel = QStringLiteral("vendor/jizhilia-api-knowledge/api-index.json");
+  const QString rel = QStringLiteral("vendor/content-data/api-index.json");
   const QStringList candidates = {
       QDir::current().filePath(rel),
 #ifdef MEDIA_HIT_SOURCE_DIR
       QDir(QStringLiteral(MEDIA_HIT_SOURCE_DIR)).filePath(rel),
 #endif
       QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../share/media-hit-assistant/vendor/api-index.json")),
-      QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../share/doc/MediaHitAssistant/vendor/jizhilia-api-knowledge/api-index.json")),
+      QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../share/doc/MediaHitAssistant/vendor/content-data/api-index.json")),
   };
   for (const auto& candidate : candidates) {
     if (QFile::exists(candidate)) return QDir::cleanPath(candidate);

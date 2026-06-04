@@ -52,7 +52,7 @@ for item in required_controls:
         problems.append(f"missing QML control/expression: {item}")
 for param in required_hot_params:
     if param not in text:
-        problems.append(f"missing hot API parameter in QML: {param}")
+        problems.append(f"missing hot article parameter in QML: {param}")
 button_count = text.count("Button {")
 if button_count < 21:
     problems.append(f"expected at least 21 buttons, found {button_count}")
@@ -65,15 +65,15 @@ if "id: hotStart" in text and text.count("id: hotStart") != 1:
     problems.append("duplicate hotStart control id found")
 if "id: hotEnd" in text and text.count("id: hotEnd") != 1:
     problems.append("duplicate hotEnd control id found")
-interactive_surfaces = ["StatCard", "Article", "API parameter", "Report", "Topic", "Plugin", "Task", "Run history"]
+interactive_surfaces = ["StatCard", "Article", "Data parameter", "Report", "Topic", "Plugin", "Task", "Run history"]
 for surface in interactive_surfaces:
     if surface not in text:
         problems.append(f"missing interactive surface marker: {surface}")
-for forbidden in [" / Dashboard", " / Content Library", " / Analysis Report", " / Topic Recommendations", " / Plugins", " / Settings", "开发", "实现", "布" + "局调整", "占位", "公众号爆文 API", "爆文 API", "极致了 API", "Jizhilia API"]:
+for forbidden in [" / Dashboard", " / Content Library", " / Analysis Report", " / Topic Recommendations", " / Plugins", " / Settings", "开发", "实现", "布" + "局调整", "占位", "公众号爆文 " + "API", "爆文 " + "API", "极" + "致了", "Jiz" + "hilia", "jiz" + "hilia"]:
     if forbidden in text:
         problems.append(f"forbidden mixed/internal wording: {forbidden}")
 if problems:
     print("UI audit failed:")
     print("\n".join(problems))
     sys.exit(1)
-print(f"OK: {button_count} visible buttons audited; language switch and hot API controls verified")
+print(f"OK: {button_count} visible buttons audited; language switch and hot article controls verified")
