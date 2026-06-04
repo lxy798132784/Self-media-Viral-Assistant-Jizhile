@@ -135,7 +135,7 @@ jobs:
           ls -lh release-assets
 
       - name: Upload assets to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: release-assets/*
           body_path: release-assets/RELEASE_NOTES.md
