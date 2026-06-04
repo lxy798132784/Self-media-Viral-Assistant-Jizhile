@@ -20,6 +20,10 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j2
 ```
 
+### 分平台部署
+
+具体安装、卸载、Release 包使用和不同 CPU 架构的说明见 [部署与开发指南](DEPLOYMENT.md)。该文档覆盖 Linux amd64、Linux arm64/aarch64、Windows x64、Docker/CI 和 macOS 源码构建注意事项。
+
 ## 项目结构
 
 ```text

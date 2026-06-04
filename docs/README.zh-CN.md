@@ -65,6 +65,7 @@ QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
 - [项目规格](zh-CN/PROJECT-SPEC.md)
 - [架构说明](zh-CN/ARCHITECTURE.md)
 - [开发指南](zh-CN/DEVELOPMENT.md)
+- [部署与开发指南](zh-CN/DEPLOYMENT.md)
 - [使用示例](zh-CN/EXAMPLES.md)
 - [插件指南](zh-CN/PLUGIN_GUIDE.md)
 

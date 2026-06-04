@@ -175,6 +175,7 @@ English:
 - [Project specification](docs/PROJECT-SPEC.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Developer guide](docs/DEVELOPMENT.md)
+- [Deployment and development guide](docs/DEPLOYMENT.md)
 - [Examples](docs/EXAMPLES.md)
 - [Plugin guide](docs/PLUGIN_GUIDE.md)
 
@@ -184,6 +185,7 @@ Chinese:
 - [Chinese project specification](docs/zh-CN/PROJECT-SPEC.md)
 - [Chinese architecture](docs/zh-CN/ARCHITECTURE.md)
 - [Chinese developer guide](docs/zh-CN/DEVELOPMENT.md)
+- [Chinese deployment and development guide](docs/zh-CN/DEPLOYMENT.md)
 - [Chinese examples](docs/zh-CN/EXAMPLES.md)
 - [Chinese plugin guide](docs/zh-CN/PLUGIN_GUIDE.md)
 

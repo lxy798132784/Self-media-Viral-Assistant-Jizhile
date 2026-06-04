@@ -1,9 +1,16 @@
 #include <QGuiApplication>
 #include <QFile>
 #include <QDir>
+#include <QImage>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QQuickItem>
+#include <QQuickItemGrabResult>
+#include <QQuickRenderControl>
 #include <QQuickStyle>
+#include <QQuickView>
+#include <QQuickWindow>
+#include <QTimer>
 #include "app_controller.h"
 
 /**
@@ -38,6 +45,9 @@ int main(int argc, char* argv[]) {
 
   AppController controller;
   controller.initialize();
+  if (args.contains("--screenshot")) {
+    controller.loadMockArticles();
+  }
 
   QQmlApplicationEngine engine;
   engine.rootContext()->setContextProperty("appController", &controller);
@@ -47,5 +57,31 @@ int main(int argc, char* argv[]) {
                      if (!obj && url == objUrl) QCoreApplication::exit(-1);
                    }, Qt::QueuedConnection);
   engine.load(url);
+
+  if (args.contains("--screenshot")) {
+    const int idx = args.indexOf("--screenshot");
+    const QString output = idx + 1 < args.size()
+                               ? args.at(idx + 1)
+                               : QDir::temp().filePath("media-hit-assistant-screenshot.png");
+    QTimer::singleShot(1200, &app, [&app, &engine, output]() {
+      QObject* rootObject = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().first();
+      auto* window = qobject_cast<QQuickWindow*>(rootObject);
+      auto* item = qobject_cast<QQuickItem*>(rootObject);
+      if (!window && item) {
+        window = item->window();
+      }
+      if (!window) {
+        QCoreApplication::exit(6);
+        return;
+      }
+      QImage shot = window->grabWindow();
+      if (shot.isNull() || !shot.save(output)) {
+        QCoreApplication::exit(7);
+        return;
+      }
+      QCoreApplication::exit(0);
+    });
+  }
+
   return app.exec();
 }

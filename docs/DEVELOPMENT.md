@@ -20,6 +20,10 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j2
 ```
 
+### Platform-specific setup
+
+For exact install, uninstall, release-package, and architecture-specific instructions, read [Deployment and Development Guide](DEPLOYMENT.md). It covers Linux amd64, Linux arm64/aarch64, Windows x64, Docker/CI, and macOS source-build notes.
+
 ## Project structure
 
 ```text
