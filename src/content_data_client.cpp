@@ -248,6 +248,63 @@ QVector<Article> ContentDataClient::callHotTypicalSearchBlocking(const QString& 
                                                               const QString& pub_type, const QString& category, int page,
                                                               const QString& start_time, const QString& end_time,
                                                               QString* error_message) const {
+  // 兼容旧调用方：委托给诚实的信封实现，仅回传文章列表。
+  // Legacy adapter: delegates to the honest envelope implementation, returns only the articles.
+  const HotTypicalResponse response =
+      fetchHotTypical(base_url, api_key, keyword, pub_type, category, page, start_time, end_time);
+  if (error_message) {
+    if (response.status == HotTypicalStatus::ApiError)
+      *error_message = response.msg.isEmpty() ? response.error_text : response.msg;
+    else
+      *error_message = response.error_text;
+  }
+  return response.articles;
+}
+
+HotTypicalResponse ContentDataClient::parseHotTypicalResponse(const QByteArray& json, const QString& keyword) const {
+  HotTypicalResponse response;
+  QJsonParseError parse_error{};
+  const auto doc = QJsonDocument::fromJson(json, &parse_error);
+  if (doc.isNull() || !doc.isObject()) {
+    response.status = HotTypicalStatus::ApiError;
+    response.code = -1;
+    response.error_text = parse_error.error == QJsonParseError::NoError
+                              ? QStringLiteral("响应不是有效 JSON 对象 / response is not a JSON object")
+                              : QStringLiteral("JSON 解析失败 / JSON parse failed: %1").arg(parse_error.errorString());
+    response.msg = response.error_text;
+    return response;
+  }
+  const QJsonObject root = doc.object();
+  // 提取官方返回的全部元数据，绝不丢弃。Extract every official metadata field; nothing is discarded.
+  response.code = root.value(QStringLiteral("code")).toInt(-1);
+  response.msg = root.value(QStringLiteral("msg")).toString();
+  response.note = root.value(QStringLiteral("note")).toString();
+  response.cost = FirstDouble(root, {"cost"});
+  response.remain_money = FirstDouble(root, {"remain_money", "remain", "balance"});
+  response.total = FirstInt(root, {"total", "total_count"});
+  response.total_page = FirstInt(root, {"total_page", "totalPage", "pages"});
+  response.articles = parseArticlesFromJson(json, keyword);
+  response.total_page = qMax(response.total_page, 0);
+  if (response.code != 0) {
+    // code!=0：key 失效 / 余额不足 / 参数错误等真实接口错误，绝不用示例数据冒充。
+    // API business error: never masquerade as real data.
+    response.status = HotTypicalStatus::ApiError;
+    if (response.msg.trimmed().isEmpty())
+      response.msg = QStringLiteral("接口返回错误码 %1 / API returned code %1").arg(response.code);
+    response.error_text = response.msg;
+  } else if (response.articles.isEmpty()) {
+    // code:0 但无数据：真实空结果，如实呈现，绝不补假数据，也绝不重试烧钱。
+    // code:0 with no rows: honest empty result, never fabricated, never retried.
+    response.status = HotTypicalStatus::RealEmpty;
+  } else {
+    response.status = HotTypicalStatus::RealData;
+  }
+  return response;
+}
+
+HotTypicalResponse ContentDataClient::fetchHotTypical(const QString& base_url, const QString& api_key, const QString& keyword,
+                                                      const QString& pub_type, const QString& category, int page,
+                                                      const QString& start_time, const QString& end_time) const {
   const QString endpoint = QStringLiteral("/fbmain/monitor/v3/hot_typical_search");
   HotTypicalRequest request;
   request.key = api_key;
@@ -258,25 +315,65 @@ QVector<Article> ContentDataClient::callHotTypicalSearchBlocking(const QString& 
   request.page = QString::number(qMax(1, page));
   request.start_time = start_time.trimmed();
   request.end_time = end_time.trimmed();
-  QString validation_error;
-  if (isConfigured(api_key) && !validateHotTypicalRequest(request, &validation_error)) {
-    if (error_message) *error_message = validation_error;
-    return mockEndpointArticles(endpoint, keyword, page);
-  }
+
+  HotTypicalResponse response;
+
+  // 未配置 key：唯一允许使用本地示例数据的情形，并明确标记为 SampleFallback。
+  // No key configured: the ONLY case that uses local sample data, clearly flagged as SampleFallback.
   if (!isConfigured(api_key)) {
-    if (error_message) *error_message = QStringLiteral("API Key empty, using hot typical mock fallback");
-    return mockEndpointArticles(endpoint, keyword, page);
+    response.status = HotTypicalStatus::SampleFallback;
+    response.code = 0;
+    response.articles = mockEndpointArticles(endpoint, keyword, page);
+    response.total = response.articles.size();
+    response.total_page = 1;
+    response.msg = QStringLiteral("未配置 API Key，展示本地示例数据 / No API key, showing local sample data");
+    response.note = response.msg;
+    return response;
   }
+
+  // 已配置 key：先做本地参数校验，失败直接返回 ValidationError，绝不发请求烧钱。
+  // Key configured: validate locally first; on failure return ValidationError without spending.
+  QString validation_error;
+  if (!validateHotTypicalRequest(request, &validation_error)) {
+    response.status = HotTypicalStatus::ValidationError;
+    response.code = -1;
+    response.error_text = validation_error;
+    response.msg = QStringLiteral("参数校验失败 / Validation failed: %1").arg(validation_error);
+    return response;
+  }
+
   const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://www.dajiala.com") : base_url.trimmed();
   const QString url = root + endpoint;
   const auto payload = buildHotTypicalSearchPayload(request);
+
+  // 关键策略：只有网络错误（空响应体 + 错误信息）才重试，且最多 3 次。
+  // 任何带响应体的结果（含 code:0 空结果与 code!=0 业务错误）都立即返回，绝不重试，绝不烧钱。
+  // Retry ONLY on network failure (empty body + error). Any response with a body — including
+  // an empty code:0 result or a code!=0 business error — returns immediately, never retried.
+  QString last_network_error;
   for (int attempt = 1; attempt <= 3; ++attempt) {
-    const QByteArray body = postMultipartBlocking(url, payload, error_message);
-    const auto rows = parseArticlesFromJson(body, keyword);
-    if (!rows.isEmpty()) return rows;
-    QEventLoop loop; QTimer::singleShot(retryDelayMs(attempt), &loop, &QEventLoop::quit); loop.exec();
+    QString network_error;
+    const QByteArray body = postMultipartBlocking(url, payload, &network_error);
+    if (body.isEmpty()) {
+      last_network_error = network_error.isEmpty() ? QStringLiteral("空响应 / empty response") : network_error;
+      if (attempt < 3) {
+        QEventLoop loop; QTimer::singleShot(retryDelayMs(attempt), &loop, &QEventLoop::quit); loop.exec();
+        continue;
+      }
+      response.status = HotTypicalStatus::NetworkError;
+      response.code = -1;
+      response.error_text = last_network_error;
+      response.msg = QStringLiteral("网络错误 / Network error: %1").arg(last_network_error);
+      return response;
+    }
+    // 拿到响应体即视为接口已应答，按信封解析后立即返回。
+    return parseHotTypicalResponse(body, keyword);
   }
-  return mockEndpointArticles(endpoint, keyword, page);
+  // 理论不可达，兜底为网络错误。Unreachable in practice; defensive network-error fallback.
+  response.status = HotTypicalStatus::NetworkError;
+  response.code = -1;
+  response.error_text = last_network_error;
+  return response;
 }
 bool ContentDataClient::isRetryableStatus(int status_code) const { return status_code == -1 || status_code == 500 || status_code == 103 || status_code == 104 || status_code == 50000; }
 int ContentDataClient::retryDelayMs(int attempt) const { const int safe_attempt = qBound(1, attempt, 5); return 1000 * (1 << (safe_attempt - 1)); }

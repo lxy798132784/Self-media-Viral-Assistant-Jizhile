@@ -19,10 +19,24 @@ for phrase in [
 ]:
     if phrase not in qml:
         problems.append(f'missing expected help/tooltip phrase: {phrase}')
-# Main params must have explicit labels, not placeholder-only inputs.
-for label in ['key', 'keyword', 'pub_type', 'category', 'page', 'start_time', 'end_time']:
-    if f'label: "{label}"' not in qml:
-        problems.append(f'missing visible label: {label}')
+# Main params must have a dedicated, labelled control (verified by control id,
+# not by raw English label text — labels are localized zh/en and must not leak
+# raw API field names into the UI).
+param_controls = {
+    'key': 'id: hotKey',
+    'keyword': 'id: hotKeyword',
+    'pub_type': 'id: hotPubType',
+    'category': 'id: hotCategory',
+    'page': 'id: hotPage',
+    'start_time': 'id: hotStart',
+    'end_time': 'id: hotEnd',
+}
+for param, needle in param_controls.items():
+    if needle not in qml:
+        problems.append(f'missing dedicated control for API param {param}: {needle}')
+for raw in ['key', 'keyword', 'pub_type', 'category', 'start_time', 'end_time']:
+    if f'label: "{raw}"' in qml:
+        problems.append(f'raw field name used as visible label (i18n leak): {raw}')
 if problems:
     print('UI help/tooltip audit failed:')
     for p in problems:

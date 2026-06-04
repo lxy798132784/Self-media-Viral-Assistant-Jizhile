@@ -23,10 +23,25 @@ for name, needle in required.items():
 for forbidden in ['FieldControl', 'DateControl', 'delegate: RowCard', 'runFullSelfCheck(".")', 'runTaskRow(modelData)', '/tmp/media-hit-hot-results']:
     if forbidden in qml:
         problems.append(f'forbidden unstable/legacy pattern remains: {forbidden}')
-# All main API params must have labels and semantic controls.
-for label in ['key', 'keyword', 'pub_type', 'category', 'page', 'start_time', 'end_time']:
-    if f'label: "{label}"' not in qml:
-        problems.append(f'missing explicit parameter label: {label}')
+# All main API params must have a dedicated, labelled semantic control.
+# Verified by control id presence (label text is localized zh/en, so we must
+# NOT hardcode raw English field names — that would force i18n regressions).
+param_controls = {
+    'key': 'id: hotKey',
+    'keyword': 'id: hotKeyword',
+    'pub_type': 'id: hotPubType',
+    'category': 'id: hotCategory',
+    'page': 'id: hotPage',
+    'start_time': 'id: hotStart',
+    'end_time': 'id: hotEnd',
+}
+for param, needle in param_controls.items():
+    if needle not in qml:
+        problems.append(f'missing dedicated control for API param {param}: {needle}')
+# Forbid raw English field names leaking into user-visible labels (i18n hygiene).
+for raw in ['key', 'keyword', 'pub_type', 'category', 'start_time', 'end_time']:
+    if f'label: "{raw}"' in qml:
+        problems.append(f'raw field name used as visible label (i18n leak): {raw}')
 # Guard against accidental border property-group name collision.
 if 'property color border:' in qml or 'property color border2:' in qml:
     problems.append('do not name color properties border/border2; it collides with Rectangle.border')
