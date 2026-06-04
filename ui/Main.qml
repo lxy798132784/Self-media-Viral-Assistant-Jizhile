@@ -475,6 +475,60 @@ ApplicationWindow {
         ColumnLayout { anchors.fill: parent; anchors.margins: pagePad; spacing: 12
             Label { text: root.t("hot_results_title"); color: textMain; font.pixelSize: 28; font.bold: true; Layout.fillWidth: true }
             Label { text: root.guide("results"); color: textSub; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+            // 诚实状态横幅：真实数据=绿，示例=黄，错误/空=红/灰，并显示花费/余额/总数。
+            // Honest status banner: real=green, sample=amber, error/empty=red/grey; shows cost/balance/total.
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: hotStatusCol.implicitHeight + 20
+                radius: 12
+                visible: appController.hotResultCount > 0 || appController.hotIsError || appController.hotStatus !== "-"
+                color: appController.hotIsReal ? "#1f3326" : (appController.hotIsSample ? "#3a3320" : (appController.hotIsError ? "#3a2222" : fieldBg))
+                border.color: appController.hotIsReal ? "#3fb950" : (appController.hotIsSample ? "#d29922" : (appController.hotIsError ? "#f85149" : line))
+                ColumnLayout {
+                    id: hotStatusCol
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 4
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+                        Label {
+                            text: (appController.hotIsReal ? "● " : (appController.hotIsSample ? "▲ " : "■ ")) + appController.hotStatus
+                            color: appController.hotIsReal ? "#3fb950" : (appController.hotIsSample ? "#d29922" : (appController.hotIsError ? "#f85149" : textSub))
+                            font.bold: true
+                            font.pixelSize: 15
+                        }
+                        Label {
+                            text: (appController.language === "en" ? "Parsed " : "已解析 ") + appController.hotResultCount + (appController.language === "en" ? " rows" : " 条")
+                            color: textMain; font.pixelSize: 14
+                        }
+                        Label {
+                            visible: appController.hotIsReal && appController.hotTotal > 0
+                            text: (appController.language === "en" ? "Total " : "共 ") + appController.hotTotal + (appController.language === "en" ? " / " : " 条 / ") + appController.hotTotalPage + (appController.language === "en" ? " pages" : " 页")
+                            color: textSub; font.pixelSize: 14
+                        }
+                        Label {
+                            visible: appController.hotCost > 0
+                            text: (appController.language === "en" ? "Cost ¥" : "花费 ¥") + appController.hotCost.toFixed(2)
+                            color: "#d29922"; font.pixelSize: 14
+                        }
+                        Label {
+                            visible: appController.hotRemainMoney > 0
+                            text: (appController.language === "en" ? "Balance ¥" : "余额 ¥") + appController.hotRemainMoney.toFixed(2)
+                            color: "#3fb950"; font.pixelSize: 14
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        visible: appController.hotMessage !== "" || appController.hotNote !== ""
+                        text: appController.hotNote !== "" ? appController.hotNote : appController.hotMessage
+                        color: appController.hotIsError ? "#f85149" : textSub
+                        font.pixelSize: 13
+                        wrapMode: Text.WordWrap
+                    }
+                }
+            }
             RowLayout { Layout.fillWidth: true; spacing: 10
                 Label { text: appController.language === "en" ? "Parsed result table" : "解析结果表"; color: textMain; font.pixelSize: 18; font.bold: true; Layout.fillWidth: true }
                 AppButton { text: appController.language === "en" ? "Refresh" : "刷新"; ToolTip.visible: hovered; ToolTip.text: "刷新解析结果"; onClicked: refreshHotRows() }

@@ -16,6 +16,34 @@ int AppController::articleCount() const { return database_.articleCount(); }
 int AppController::totalReads() const { return database_.totalReads(); }
 int AppController::totalLikes() const { return database_.totalLikes(); }
 
+// 爆文采集元数据 getter：把最近一次响应信封暴露给 QML，供 UI 诚实展示。
+// Hot-article metadata getters: expose the last response envelope to QML for honest display.
+QString AppController::hotStatus() const {
+  switch (hot_typical_response_.status) {
+    case HotTypicalStatus::RealData: return language_ == QStringLiteral("en") ? QStringLiteral("Real data") : QStringLiteral("真实数据");
+    case HotTypicalStatus::RealEmpty: return language_ == QStringLiteral("en") ? QStringLiteral("Empty result") : QStringLiteral("空结果");
+    case HotTypicalStatus::ApiError: return language_ == QStringLiteral("en") ? QStringLiteral("API error") : QStringLiteral("接口错误");
+    case HotTypicalStatus::NetworkError: return language_ == QStringLiteral("en") ? QStringLiteral("Network error") : QStringLiteral("网络错误");
+    case HotTypicalStatus::ValidationError: return language_ == QStringLiteral("en") ? QStringLiteral("Invalid params") : QStringLiteral("参数错误");
+    case HotTypicalStatus::SampleFallback: return language_ == QStringLiteral("en") ? QStringLiteral("Sample data") : QStringLiteral("示例数据");
+  }
+  return QStringLiteral("-");
+}
+QString AppController::hotMessage() const { return hot_typical_response_.msg; }
+QString AppController::hotNote() const { return hot_typical_response_.note; }
+double AppController::hotCost() const { return hot_typical_response_.cost; }
+double AppController::hotRemainMoney() const { return hot_typical_response_.remain_money; }
+int AppController::hotTotal() const { return hot_typical_response_.total; }
+int AppController::hotTotalPage() const { return hot_typical_response_.total_page; }
+int AppController::hotResultCount() const { return hot_typical_results_.size(); }
+bool AppController::hotIsReal() const { return hot_typical_response_.isReal(); }
+bool AppController::hotIsSample() const { return hot_typical_response_.isSample(); }
+bool AppController::hotIsError() const {
+  return hot_typical_response_.status == HotTypicalStatus::ApiError ||
+         hot_typical_response_.status == HotTypicalStatus::NetworkError ||
+         hot_typical_response_.status == HotTypicalStatus::ValidationError;
+}
+
 bool AppController::initialize() {
   if (status_ != QStringLiteral("Ready")) {
     return true;
@@ -286,16 +314,71 @@ int AppController::runHotTypicalCollection(const QString& apiKey, const QString&
 
   const QString task_keyword = keyword.trimmed().isEmpty() ? QStringLiteral("公众号") : keyword.trimmed();
   const QString key = apiKey.trimmed().isEmpty() ? config_.apiKey() : apiKey.trimmed();
-  QString error;
+  // 走诚实信封路径：真实 key 的空结果/错误绝不伪造数据，仅未配置 key 才用示例。
+  // Honest envelope path: a configured key never fabricates data; samples only when key is absent.
+  const HotTypicalResponse response =
+      client_.fetchHotTypical(QString(), key, task_keyword, pubType, category, qMax(1, page), startTime, endTime);
+  hot_typical_response_ = response;
+  hot_typical_results_ = response.articles;
+
   int inserted = 0;
-  const auto articles = client_.callHotTypicalSearchBlocking(QString(), key, task_keyword, pubType, category, qMax(1, page), startTime, endTime, &error);
-  hot_typical_results_ = articles;
-  for (const auto& article : articles) {
-    if (database_.upsertArticle(article)) ++inserted;
+  // 仅当数据真实或为示例时入库；接口错误/网络错误/参数错误不污染数据库。
+  // Persist only real or sample data; errors must not pollute the database.
+  if (response.status == HotTypicalStatus::RealData ||
+      response.status == HotTypicalStatus::RealEmpty ||
+      response.status == HotTypicalStatus::SampleFallback) {
+    for (const auto& article : response.articles) {
+      if (database_.upsertArticle(article)) ++inserted;
+    }
   }
-  const QString params = hotTypicalPayloadPreview(key.isEmpty() ? QStringLiteral("[empty]") : QStringLiteral("[configured]"), task_keyword, pubType, category, qMax(1, page), startTime, endTime);
-  database_.recordCollectionRun(0, client_.isConfigured(key) ? QStringLiteral("hot_typical_success") : QStringLiteral("hot_typical_mock_fallback"), inserted, params.left(500) + QStringLiteral(" ") + error);
-  setStatus(QStringLiteral("爆文采集完成：%1 条").arg(inserted));
+
+  // 记录运行状态：状态码 + 花费 + 余额 + 总数，便于审计与成本追踪。
+  // Record run status with code/cost/balance/total for audit and cost tracking.
+  const QString params = hotTypicalPayloadPreview(key.isEmpty() ? QStringLiteral("[empty]") : QStringLiteral("[configured]"),
+                                                  task_keyword, pubType, category, qMax(1, page), startTime, endTime);
+  QString run_status;
+  switch (response.status) {
+    case HotTypicalStatus::RealData: run_status = QStringLiteral("hot_typical_real_data"); break;
+    case HotTypicalStatus::RealEmpty: run_status = QStringLiteral("hot_typical_real_empty"); break;
+    case HotTypicalStatus::ApiError: run_status = QStringLiteral("hot_typical_api_error"); break;
+    case HotTypicalStatus::NetworkError: run_status = QStringLiteral("hot_typical_network_error"); break;
+    case HotTypicalStatus::ValidationError: run_status = QStringLiteral("hot_typical_validation_error"); break;
+    case HotTypicalStatus::SampleFallback: run_status = QStringLiteral("hot_typical_sample_fallback"); break;
+  }
+  const QString run_note = QStringLiteral("status=%1 code=%2 cost=%3 remain=%4 total=%5 msg=%6")
+                               .arg(run_status).arg(response.code)
+                               .arg(response.cost, 0, 'f', 2).arg(response.remain_money, 0, 'f', 2)
+                               .arg(response.total).arg(response.msg);
+  database_.recordCollectionRun(0, run_status, inserted, params.left(400) + QStringLiteral(" ") + run_note);
+
+  // UI 状态行：诚实呈现是真实数据、空结果、示例还是错误。
+  // UI status line: honestly state real / empty / sample / error.
+  QString ui_status;
+  switch (response.status) {
+    case HotTypicalStatus::RealData:
+      ui_status = QStringLiteral("爆文采集完成：%1 条真实数据（花费 ¥%2，余额 ¥%3，共 %4 条 / %5 页）")
+                      .arg(inserted).arg(response.cost, 0, 'f', 2).arg(response.remain_money, 0, 'f', 2)
+                      .arg(response.total).arg(response.total_page);
+      break;
+    case HotTypicalStatus::RealEmpty:
+      ui_status = QStringLiteral("查询成功但无结果（花费 ¥%1，余额 ¥%2）。这是真实空结果，未补任何示例数据。")
+                      .arg(response.cost, 0, 'f', 2).arg(response.remain_money, 0, 'f', 2);
+      break;
+    case HotTypicalStatus::ApiError:
+      ui_status = QStringLiteral("接口错误（code=%1）：%2").arg(response.code).arg(response.msg);
+      break;
+    case HotTypicalStatus::NetworkError:
+      ui_status = QStringLiteral("网络错误：%1").arg(response.error_text);
+      break;
+    case HotTypicalStatus::ValidationError:
+      ui_status = QStringLiteral("参数校验失败：%1").arg(response.error_text);
+      break;
+    case HotTypicalStatus::SampleFallback:
+      ui_status = QStringLiteral("未配置 API Key，展示 %1 条本地示例数据（非真实采集）。").arg(inserted);
+      break;
+  }
+  setStatus(ui_status);
+  emit hotResultChanged();
   emit dataChanged();
   return inserted;
 }

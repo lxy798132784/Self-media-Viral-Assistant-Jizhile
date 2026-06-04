@@ -56,6 +56,17 @@ target_compile_definitions(unit_tests PRIVATE MEDIA_HIT_SOURCE_DIR="${CMAKE_SOUR
 target_link_libraries(unit_tests PRIVATE Qt6::Core Qt6::Sql Qt6::Network Qt6::Test)
 add_test(NAME unit_tests COMMAND unit_tests WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+# 一次性真实 API 探针（仅手动运行，不参与 CTest），验证诚实信封端到端。
+# One-shot live API probe (manual only, excluded from CTest) for honest envelope verification.
+add_executable(live_probe
+    include/content_data_client.h
+    include/article.h
+    tests/live_probe.cpp
+    src/content_data_client.cpp
+)
+target_include_directories(live_probe PRIVATE include)
+target_link_libraries(live_probe PRIVATE Qt6::Core Qt6::Network)
+
 include(GNUInstallDirs)
 install(TARGETS media-hit-assistant RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES packaging/com.mediahit.Assistant.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)

@@ -21,6 +21,12 @@ class CoreTest : public QObject {
   void clientBuildsHotTypicalPayload();
   void clientValidatesOfficialHotTypicalModel();
   void clientParsesOfficialHotTypicalResponseForVisualization();
+  void clientParsesHotTypicalEnvelopeRealData();
+  void clientParsesHotTypicalEnvelopeRealEmptyNeverFabricates();
+  void clientParsesHotTypicalEnvelopeApiErrorNeverFabricates();
+  void clientFetchHotTypicalUsesSampleOnlyWhenNoKey();
+  void clientFetchHotTypicalValidationErrorDoesNotSpend();
+  void appControllerExposesHotTypicalMetadata();
   void appControllerCollectsHotTypicalAndExportsMultipleFormats();
   void pluginRegistryExposesBuiltins();
   void pluginRegistryScansDynamicPluginsFailClosed();
@@ -229,6 +235,87 @@ void CoreTest::clientParsesOfficialHotTypicalResponseForVisualization() {
   QCOMPARE(row.coverUrl, QStringLiteral("https://example.com/cover.jpg"));
   QCOMPARE(row.hotScore, 98.5);
   QVERIFY(row.summary.contains(QStringLiteral("爆值")));
+}
+
+void CoreTest::clientParsesHotTypicalEnvelopeRealData() {
+  ContentDataClient client;
+  const QByteArray official = R"({"code":0,"msg":"success","note":"本接口单条数据为0.02，本次共获取20条数据，共消费0.4！","cost":0.4,"remain_money":9797.39,"total":28,"total_page":2,"data":[{"url":"https://example.com/hot","mp_nickname":"作者号","title":"爆文标题","pub_time":"2026-05-17","wxid":"wx123","hot":98.5,"read_num":120000,"zan_num":4500,"cover":"https://example.com/cover.jpg","avg":30000,"category":"科技","fans":900000,"position":1,"is_original":"是","publish_type":"图文"}]})";
+  const auto resp = client.parseHotTypicalResponse(official, QStringLiteral("AI"));
+  QCOMPARE(resp.status, HotTypicalStatus::RealData);
+  QCOMPARE(resp.code, 0);
+  QCOMPARE(resp.cost, 0.4);
+  QCOMPARE(resp.remain_money, 9797.39);
+  QCOMPARE(resp.total, 28);
+  QCOMPARE(resp.total_page, 2);
+  QCOMPARE(resp.articles.size(), 1);
+  QVERIFY(resp.isReal());
+  QVERIFY(!resp.isSample());
+  QVERIFY(resp.note.contains(QStringLiteral("消费")));
+}
+
+void CoreTest::clientParsesHotTypicalEnvelopeRealEmptyNeverFabricates() {
+  ContentDataClient client;
+  // code:0 但 data 为空 —— 真实空结果，绝不能伪造文章。
+  const QByteArray empty = R"({"code":0,"msg":"success","note":"查询数据为空时默认算1条数据","cost":0.02,"remain_money":100.5,"total":0,"total_page":0,"data":[]})";
+  const auto resp = client.parseHotTypicalResponse(empty, QStringLiteral("不存在的关键词"));
+  QCOMPARE(resp.status, HotTypicalStatus::RealEmpty);
+  QCOMPARE(resp.code, 0);
+  QCOMPARE(resp.cost, 0.02);
+  QCOMPARE(resp.remain_money, 100.5);
+  QVERIFY(resp.articles.isEmpty());  // 关键：不补任何假数据 / never fabricated
+  QVERIFY(resp.isReal());
+  QVERIFY(!resp.isSample());
+}
+
+void CoreTest::clientParsesHotTypicalEnvelopeApiErrorNeverFabricates() {
+  ContentDataClient client;
+  // code!=0（余额不足等）—— 真实接口错误，绝不能用示例数据冒充。
+  const QByteArray err = R"({"code":108,"msg":"余额不足，请充值","cost":0,"remain_money":0,"total":0,"total_page":0})";
+  const auto resp = client.parseHotTypicalResponse(err, QStringLiteral("AI"));
+  QCOMPARE(resp.status, HotTypicalStatus::ApiError);
+  QCOMPARE(resp.code, 108);
+  QVERIFY(resp.articles.isEmpty());  // 关键：错误时绝不伪造数据 / no fabrication on error
+  QVERIFY(!resp.isReal());
+  QVERIFY(!resp.isSample());
+  QVERIFY(resp.msg.contains(QStringLiteral("余额不足")));
+  QVERIFY(resp.error_text.contains(QStringLiteral("余额不足")));
+}
+
+void CoreTest::clientFetchHotTypicalUsesSampleOnlyWhenNoKey() {
+  ContentDataClient client;
+  // 未配置 key：唯一允许示例兜底的情形，且必须明确标记为 SampleFallback。
+  const auto resp = client.fetchHotTypical(QString(), QString(), QStringLiteral("AI"), QStringLiteral("0"),
+                                           QStringLiteral("7"), 1, QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
+  QCOMPARE(resp.status, HotTypicalStatus::SampleFallback);
+  QVERIFY(!resp.articles.isEmpty());  // 有示例数据 / has sample rows
+  QVERIFY(resp.isSample());
+  QVERIFY(!resp.isReal());  // 关键：示例数据绝不被当作真实数据 / sample never counted as real
+}
+
+void CoreTest::clientFetchHotTypicalValidationErrorDoesNotSpend() {
+  ContentDataClient client;
+  // 配置了 key 但参数非法（日期格式错误）—— 本地校验失败，绝不发请求烧钱。
+  const auto resp = client.fetchHotTypical(QString(), QStringLiteral("JZLfaketestkey123"), QStringLiteral("AI"),
+                                           QStringLiteral("0"), QStringLiteral("7"), 1,
+                                           QStringLiteral("bad-date"), QStringLiteral("2026-05-17"));
+  QCOMPARE(resp.status, HotTypicalStatus::ValidationError);
+  QVERIFY(resp.articles.isEmpty());  // 不发请求、不返回数据 / no request, no data
+  QVERIFY(!resp.isReal());
+  QVERIFY(!resp.isSample());
+  QVERIFY(!resp.error_text.isEmpty());
+}
+
+void CoreTest::appControllerExposesHotTypicalMetadata() {
+  AppController controller;
+  QVERIFY(controller.initialize());
+  // 未配置 key 时跑采集 —— 应得到示例数据并通过元数据属性诚实暴露状态。
+  controller.runHotTypicalCollection(QString(), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("7"), 1,
+                                     QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
+  QVERIFY(controller.hotResultCount() > 0);
+  QVERIFY(controller.hotIsSample());            // 明确标记为示例 / flagged as sample
+  QVERIFY(!controller.hotIsReal());             // 关键：示例不冒充真实 / sample is not real
+  QVERIFY(!controller.hotIsError());
+  QVERIFY(!controller.hotStatus().isEmpty());
 }
 
 void CoreTest::appControllerCollectsHotTypicalAndExportsMultipleFormats() {

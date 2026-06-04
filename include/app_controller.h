@@ -22,6 +22,19 @@ class AppController : public QObject {
   Q_PROPERTY(int articleCount READ articleCount NOTIFY dataChanged)
   Q_PROPERTY(int totalReads READ totalReads NOTIFY dataChanged)
   Q_PROPERTY(int totalLikes READ totalLikes NOTIFY dataChanged)
+  // 爆文采集元数据：花费/余额/总数/总页/状态，供 UI 诚实展示真实或示例数据。
+  // Hot-article metadata: cost/balance/total/pages/status for honest UI display.
+  Q_PROPERTY(QString hotStatus READ hotStatus NOTIFY hotResultChanged)
+  Q_PROPERTY(QString hotMessage READ hotMessage NOTIFY hotResultChanged)
+  Q_PROPERTY(QString hotNote READ hotNote NOTIFY hotResultChanged)
+  Q_PROPERTY(double hotCost READ hotCost NOTIFY hotResultChanged)
+  Q_PROPERTY(double hotRemainMoney READ hotRemainMoney NOTIFY hotResultChanged)
+  Q_PROPERTY(int hotTotal READ hotTotal NOTIFY hotResultChanged)
+  Q_PROPERTY(int hotTotalPage READ hotTotalPage NOTIFY hotResultChanged)
+  Q_PROPERTY(int hotResultCount READ hotResultCount NOTIFY hotResultChanged)
+  Q_PROPERTY(bool hotIsReal READ hotIsReal NOTIFY hotResultChanged)
+  Q_PROPERTY(bool hotIsSample READ hotIsSample NOTIFY hotResultChanged)
+  Q_PROPERTY(bool hotIsError READ hotIsError NOTIFY hotResultChanged)
  public:
   explicit AppController(QObject* parent = nullptr);
   QString status() const;
@@ -29,6 +42,18 @@ class AppController : public QObject {
   int articleCount() const;
   int totalReads() const;
   int totalLikes() const;
+  // 爆文采集元数据 getter / Hot-article metadata getters
+  QString hotStatus() const;
+  QString hotMessage() const;
+  QString hotNote() const;
+  double hotCost() const;
+  double hotRemainMoney() const;
+  int hotTotal() const;
+  int hotTotalPage() const;
+  int hotResultCount() const;
+  bool hotIsReal() const;
+  bool hotIsSample() const;
+  bool hotIsError() const;
   Q_INVOKABLE bool initialize();
   Q_INVOKABLE void setLanguage(const QString& language);
   Q_INVOKABLE QString trText(const QString& key) const;
@@ -81,6 +106,7 @@ class AppController : public QObject {
   void statusChanged();
   void languageChanged();
   void dataChanged();
+  void hotResultChanged();
  private:
   void setStatus(const QString& status);
   QString language_ = "zh";
@@ -92,4 +118,5 @@ class AppController : public QObject {
   ApiCatalog api_catalog_;
   BuiltinPluginRegistry plugin_registry_;
   QVector<Article> hot_typical_results_;
+  HotTypicalResponse hot_typical_response_;  ///< 最近一次爆文采集的完整响应信封 / last hot-article response envelope
 };

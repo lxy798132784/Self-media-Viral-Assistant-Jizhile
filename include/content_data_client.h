@@ -28,6 +28,44 @@ struct HotTypicalRequest {
 };
 
 /**
+ * @brief 采集结果状态 / Collection result status
+ * @details 用于区分真实数据、真实空结果、接口错误、网络错误和示例兜底，
+ *          避免把示例数据或错误当成真实采集结果展示给用户。
+ *          Distinguishes real data, real empty results, API errors, network
+ *          errors, and sample fallback so the UI never shows fabricated or
+ *          error states as if they were genuine collected results.
+ */
+enum class HotTypicalStatus {
+  RealData,       ///< code:0 且有数据 / code:0 with data
+  RealEmpty,      ///< code:0 但无数据（真实空结果）/ code:0 but empty
+  ApiError,       ///< code!=0（key 失效/余额不足/参数错）/ code!=0
+  NetworkError,   ///< 网络超时/连接失败 / timeout or connection failure
+  ValidationError,///< 本地参数校验失败 / local validation failed
+  SampleFallback  ///< 未配置 key，使用本地示例 / no key, local sample
+};
+
+/**
+ * @brief `/fbmain/monitor/v3/hot_typical_search` 完整响应信封 / Full response envelope
+ * @details 保留官方返回的全部元数据（花费、余额、总数、总页、计费说明、状态码），
+ *          供 UI 真实展示，绝不丢弃。Keeps every official metadata field for
+ *          honest visualization; nothing is discarded.
+ */
+struct HotTypicalResponse {
+  HotTypicalStatus status = HotTypicalStatus::NetworkError;
+  int code = -1;                ///< 状态码，0 为成功 / status code, 0 = success
+  QString msg;                  ///< 提示信息 / message
+  QString note;                 ///< 计费说明 / fee note
+  double cost = 0.0;            ///< 本次花费 / cost of this call
+  double remain_money = 0.0;    ///< 账户余额 / remaining balance
+  int total = 0;                ///< 结果总量 / total results
+  int total_page = 0;           ///< 结果总页数 / total pages
+  QVector<Article> articles;    ///< 解析出的文章 / parsed articles
+  QString error_text;           ///< 错误详情（网络/校验）/ error detail
+  bool isReal() const { return status == HotTypicalStatus::RealData || status == HotTypicalStatus::RealEmpty; }
+  bool isSample() const { return status == HotTypicalStatus::SampleFallback; }
+};
+
+/**
  * @brief 内容数据服务 客户端 / Content Data Service client
  *
  * @details 构造请求体、执行同步 HTTP POST、解析文章响应，并在未配置密钥时进入安全示例采集。
@@ -149,6 +187,25 @@ class ContentDataClient : public QObject {
                                                 const QString& pub_type, const QString& category, int page,
                                                 const QString& start_time, const QString& end_time,
                                                 QString* error_message) const;
+
+  /**
+   * @brief 获取爆文搜索完整响应信封 / Fetch full hot-article response envelope
+   * @details 区分真实数据、真实空结果、接口错误、网络错误、参数错误和示例兜底，
+   *          保留 code/msg/note/cost/remain_money/total/total_page 等全部元数据。
+   *          关键：配置真实 key 时，空结果或接口错误绝不用示例数据冒充，也不盲目重试烧钱；
+   *          仅网络错误才重试。Never fabricates sample data for a configured key, and only
+   *          retries on network errors so empty results and API errors do not burn balance.
+   */
+  HotTypicalResponse fetchHotTypical(const QString& base_url, const QString& api_key, const QString& keyword,
+                                     const QString& pub_type, const QString& category, int page,
+                                     const QString& start_time, const QString& end_time) const;
+
+  /**
+   * @brief 解析爆文搜索响应信封 / Parse hot-article response envelope
+   * @details 提取官方返回的全部元数据并按 code 判定状态，code!=0 视为接口错误。
+   *          Extracts every official metadata field and treats code!=0 as an API error.
+   */
+  HotTypicalResponse parseHotTypicalResponse(const QByteArray& json, const QString& keyword) const;
 
   /**
    * @brief 判断 HTTP 状态是否可重试 / Check whether HTTP status is retryable
