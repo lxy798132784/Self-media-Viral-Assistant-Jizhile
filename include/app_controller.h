@@ -46,6 +46,10 @@ class AppController : public QObject {
   Q_INVOKABLE QString hotTypicalPayloadPreview(const QString& apiKey, const QString& keyword, const QString& pubType,
                                                const QString& category, int page, const QString& startTime,
                                                const QString& endTime) const;
+  Q_INVOKABLE QStringList datePresetRows() const;
+  Q_INVOKABLE QStringList dateRangeForPreset(const QString& preset) const;
+  Q_INVOKABLE QStringList aiExtensionRows() const;
+  Q_INVOKABLE QString aiExtensionPayloadPreview(const QString& title, const QString& summary) const;
   Q_INVOKABLE int runHotTypicalCollection(const QString& apiKey, const QString& keyword, const QString& pubType,
                                           const QString& category, int page, const QString& startTime,
                                           const QString& endTime);
@@ -56,6 +60,7 @@ class AppController : public QObject {
   Q_INVOKABLE QStringList taskRows() const;
   Q_INVOKABLE QStringList runRows() const;
   Q_INVOKABLE bool runFullSelfCheck(const QString& exportDir);
+  Q_INVOKABLE void noteSelection(const QString& area, const QString& value);
  signals:
   void statusChanged();
   void languageChanged();

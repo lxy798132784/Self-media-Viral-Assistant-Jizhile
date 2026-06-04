@@ -1,4 +1,9 @@
 #include "plugin_interfaces.h"
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QSet>
 
 QStringList BuiltinPluginRegistry::plugins() const {
   return {
@@ -9,13 +14,71 @@ QStringList BuiltinPluginRegistry::plugins() const {
   };
 }
 
+QStringList BuiltinPluginRegistry::plugins(const QString& plugin_dir) const {
+  QSet<QString> merged;
+  QStringList rows = plugins();
+  for (const auto& row : rows) merged.insert(row);
+  QStringList report;
+  for (const auto& id : scanDynamicPluginIds(plugin_dir, &report)) {
+    if (!merged.contains(id)) {
+      rows << id;
+      merged.insert(id);
+    }
+  }
+  return rows;
+}
+
 QStringList BuiltinPluginRegistry::dynamicPluginHints(const QString& plugin_dir) const {
   return {
       QStringLiteral("CTK plugin directory: %1").arg(plugin_dir.isEmpty() ? QStringLiteral("plugins") : plugin_dir),
       QStringLiteral("provider plugins expose ProviderPluginInterface"),
       QStringLiteral("exporter plugins expose ExporterPluginInterface"),
       QStringLiteral("analyzer plugins expose AnalyzerPluginInterface"),
+      QStringLiteral("metadata files: providers/*.json, exporters/*.json, analyzers/*.json"),
+      QStringLiteral("fail closed: invalid metadata is blocked and built-ins remain active"),
   };
+}
+
+QStringList BuiltinPluginRegistry::dynamicPluginScanReport(const QString& plugin_dir) const {
+  QStringList report;
+  scanDynamicPluginIds(plugin_dir, &report);
+  if (report.isEmpty()) report << QStringLiteral("no dynamic plugin metadata found");
+  return report;
+}
+
+QStringList BuiltinPluginRegistry::scanDynamicPluginIds(const QString& plugin_dir, QStringList* report) const {
+  QStringList ids;
+  const QString root_path = plugin_dir.trimmed().isEmpty() ? QStringLiteral("plugins") : plugin_dir.trimmed();
+  const QDir root(root_path);
+  const QStringList subdirs{QStringLiteral("providers"), QStringLiteral("exporters"), QStringLiteral("analyzers")};
+  const QSet<QString> allowed_kinds{QStringLiteral("provider"), QStringLiteral("exporter"), QStringLiteral("analyzer")};
+  for (const auto& subdir : subdirs) {
+    const QDir dir(root.filePath(subdir));
+    if (!dir.exists()) continue;
+    for (const auto& file_name : dir.entryList(QStringList{QStringLiteral("*.json")}, QDir::Files | QDir::Readable)) {
+      const QString path = dir.filePath(file_name);
+      QFile file(path);
+      if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (report) *report << QStringLiteral("blocked unreadable metadata: %1").arg(path);
+        continue;
+      }
+      const auto doc = QJsonDocument::fromJson(file.readAll());
+      if (!doc.isObject()) {
+        if (report) *report << QStringLiteral("blocked invalid metadata: %1").arg(path);
+        continue;
+      }
+      const auto obj = doc.object();
+      const QString id = obj.value(QStringLiteral("id")).toString().trimmed();
+      const QString kind = obj.value(QStringLiteral("kind")).toString().trimmed();
+      if (id.isEmpty() || !allowed_kinds.contains(kind) || !id.startsWith(kind + QStringLiteral(":"))) {
+        if (report) *report << QStringLiteral("blocked unsafe metadata: %1").arg(path);
+        continue;
+      }
+      ids << id;
+      if (report) *report << QStringLiteral("loaded metadata plugin: %1 from %2").arg(id, path);
+    }
+  }
+  return ids;
 }
 
 QString BuiltinPluginRegistry::analyze(const QVector<Article>& articles) const {

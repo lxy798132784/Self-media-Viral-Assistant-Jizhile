@@ -248,6 +248,27 @@ QVector<Article> JizhiliaClient::callHotTypicalSearchBlocking(const QString& bas
 }
 bool JizhiliaClient::isRetryableStatus(int status_code) const { return status_code == -1 || status_code == 500 || status_code == 103 || status_code == 104 || status_code == 50000; }
 int JizhiliaClient::retryDelayMs(int attempt) const { const int safe_attempt = qBound(1, attempt, 5); return 1000 * (1 << (safe_attempt - 1)); }
+QString JizhiliaClient::classifyApiError(int status_code, const QString& error_text) const {
+  const QString text = error_text.toLower();
+  if (status_code == -1 || text.contains(QStringLiteral("timeout")) || text.contains(QStringLiteral("timed out"))) return QStringLiteral("network_timeout");
+  if (status_code == 401 || text.contains(QStringLiteral("unauthorized")) || text.contains(QStringLiteral("invalid token"))) return QStringLiteral("authentication_error");
+  if (status_code == 429 || text.contains(QStringLiteral("rate limit"))) return QStringLiteral("rate_limited");
+  if (status_code == 402 || text.contains(QStringLiteral("余额")) || text.contains(QStringLiteral("quota"))) return QStringLiteral("quota_or_balance_error");
+  if (status_code == 400 || text.contains(QStringLiteral("parameter")) || text.contains(QStringLiteral("category")) || text.contains(QStringLiteral("page"))) return QStringLiteral("parameter_error");
+  if (status_code >= 500) return QStringLiteral("server_error");
+  return QStringLiteral("unknown_error");
+}
+QString JizhiliaClient::hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                            const QString& category, int page, const QString& start_time,
+                                            const QString& end_time) const {
+  QJsonObject root;
+  root["endpoint"] = QStringLiteral("/fbmain/monitor/v3/hot_typical_search");
+  root["content_type"] = QStringLiteral("multipart/form-data");
+  root["configured"] = isConfigured(apiKey);
+  root["classification_hint"] = QStringLiteral("preview_only");
+  root["payload"] = buildHotTypicalSearchPayload(apiKey, keyword, pubType, category, page, start_time, end_time);
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
 bool JizhiliaClient::isConfigured(const QString& api_key) const { return !api_key.trimmed().isEmpty(); }
 QByteArray JizhiliaClient::postJsonBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
   QNetworkAccessManager manager;

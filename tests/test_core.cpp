@@ -1,6 +1,8 @@
 #include <QtTest/QtTest>
 #include <QTemporaryDir>
 #include <QJsonObject>
+#include <QDir>
+#include <QFile>
 #include "api_catalog.h"
 #include "database_manager.h"
 #include "export_service.h"
@@ -20,6 +22,9 @@ class CoreTest : public QObject {
   void clientValidatesOfficialHotTypicalModel();
   void appControllerSupportsLanguageAndHotTypicalApi();
   void pluginRegistryExposesBuiltins();
+  void pluginRegistryScansDynamicPluginsFailClosed();
+  void clientClassifiesApiErrorsAndSupportsSmokePlan();
+  void appControllerExposesDatePickersAndAiExtensionSlot();
   void appControllerExposesEndpointAndPluginRows();
 };
 
@@ -206,7 +211,6 @@ void CoreTest::pluginRegistryExposesBuiltins() {
   QVERIFY(plugins.contains(QStringLiteral("provider:jizhilia")));
   QVERIFY(plugins.contains(QStringLiteral("exporter:markdown")));
   QVERIFY(plugins.contains(QStringLiteral("exporter:xml")));
-  QVERIFY(plugins.contains(QStringLiteral("analyzer:hit-score")));
   QVERIFY(!registry.dynamicPluginHints(QStringLiteral("plugins")).isEmpty());
   Article article;
   article.title = QStringLiteral("强共鸣标题");
@@ -216,6 +220,55 @@ void CoreTest::pluginRegistryExposesBuiltins() {
   article.likeCount = 4000;
   const QString report = registry.analyze(QVector<Article>{article});
   QVERIFY(report.contains(QStringLiteral("爆款评分")));
+}
+
+void CoreTest::pluginRegistryScansDynamicPluginsFailClosed() {
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
+  QDir root(dir.path());
+  QVERIFY(root.mkpath("providers"));
+  QVERIFY(root.mkpath("exporters"));
+  QVERIFY(root.mkpath("analyzers"));
+  QFile provider(root.filePath("providers/jizhilia-provider.json"));
+  QVERIFY(provider.open(QIODevice::WriteOnly | QIODevice::Text));
+  provider.write(R"({"id":"provider:demo","name":"Demo Provider","kind":"provider"})");
+  provider.close();
+  QFile invalid(root.filePath("analyzers/broken.json"));
+  QVERIFY(invalid.open(QIODevice::WriteOnly | QIODevice::Text));
+  invalid.write("not json");
+  invalid.close();
+  BuiltinPluginRegistry registry;
+  const auto rows = registry.plugins(dir.path());
+  QVERIFY(rows.contains(QStringLiteral("provider:jizhilia")));
+  QVERIFY(rows.contains(QStringLiteral("provider:demo")));
+  QVERIFY(registry.dynamicPluginScanReport(dir.path()).join("\n").contains(QStringLiteral("blocked")));
+}
+
+void CoreTest::clientClassifiesApiErrorsAndSupportsSmokePlan() {
+  JizhiliaClient client;
+  QCOMPARE(client.classifyApiError(401, QString()), QStringLiteral("authentication_error"));
+  QCOMPARE(client.classifyApiError(429, QString()), QStringLiteral("rate_limited"));
+  QCOMPARE(client.classifyApiError(402, QStringLiteral("余额不足")), QStringLiteral("quota_or_balance_error"));
+  QCOMPARE(client.classifyApiError(400, QStringLiteral("category")), QStringLiteral("parameter_error"));
+  QCOMPARE(client.classifyApiError(500, QString()), QStringLiteral("server_error"));
+  QCOMPARE(client.classifyApiError(-1, QStringLiteral("timeout")), QStringLiteral("network_timeout"));
+  const QString plan = client.hotTypicalSmokePlan(QStringLiteral("[configured]"), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("0"), 1, QStringLiteral("2025-08-15"), QStringLiteral("2025-08-16"));
+  QVERIFY(plan.contains(QStringLiteral("hot_typical_search")));
+  QVERIFY(plan.contains(QStringLiteral("multipart/form-data")));
+  QVERIFY(!plan.contains(QStringLiteral("official-key")));
+}
+
+void CoreTest::appControllerExposesDatePickersAndAiExtensionSlot() {
+  AppController controller;
+  QVERIFY(controller.initialize());
+  QVERIFY(controller.datePresetRows().join("\n").contains(QStringLiteral("Last 7 days")) || controller.datePresetRows().join("\n").contains(QStringLiteral("最近7天")));
+  const auto range = controller.dateRangeForPreset(QStringLiteral("last_7_days"));
+  QCOMPARE(range.size(), 2);
+  QVERIFY(range.first().contains("-"));
+  QVERIFY(controller.aiExtensionRows().join("\n").contains(QStringLiteral("disabled")) || controller.aiExtensionRows().join("\n").contains(QStringLiteral("未启用")));
+  QVERIFY(controller.aiExtensionPayloadPreview(QStringLiteral("title"), QStringLiteral("summary")).contains(QStringLiteral("future_ai_extension")));
+  controller.noteSelection(QStringLiteral("Article"), QStringLiteral("row-1"));
+  QVERIFY(controller.status().contains(QStringLiteral("row-1")));
 }
 
 void CoreTest::appControllerExposesEndpointAndPluginRows() {

@@ -158,15 +158,11 @@ class JizhiliaClient : public QObject {
    * @return 是否可重试 / Whether retry is appropriate
    */
   bool isRetryableStatus(int status_code) const;
-
-  /**
-   * @brief 计算重试等待时间 / Calculate retry delay
-   * @details 使用指数退避并设置上限，避免频繁请求触发限流。
-   *          Uses capped exponential backoff to avoid repeated requests triggering rate limits.
-   * @param attempt 第几次重试 / Retry attempt number
-   * @return 等待毫秒数 / Delay in milliseconds
-   */
   int retryDelayMs(int attempt) const;
+  QString classifyApiError(int status_code, const QString& error_text) const;
+  QString hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
+                              const QString& category, int page, const QString& start_time,
+                              const QString& end_time) const;
 
   /**
    * @brief 判断是否配置 API Key / Check API key configuration

@@ -1,5 +1,6 @@
 #include "app_controller.h"
 #include <QCoreApplication>
+#include <QDate>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -240,9 +241,48 @@ QString AppController::hotTypicalPayloadPreview(const QString& apiKey, const QSt
   return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
 }
 
+QStringList AppController::datePresetRows() const {
+  if (language_ == QStringLiteral("en")) {
+    return {QStringLiteral("Last 7 days"), QStringLiteral("Last 30 days"), QStringLiteral("This month"), QStringLiteral("Custom range")};
+  }
+  return {QStringLiteral("最近7天"), QStringLiteral("最近30天"), QStringLiteral("本月"), QStringLiteral("自定义范围")};
+}
+
+QStringList AppController::dateRangeForPreset(const QString& preset) const {
+  const QString p = preset.trimmed().toLower();
+  const QDate today = QDate::currentDate();
+  QDate start = today.addDays(-6);
+  QDate end = today;
+  if (p == QStringLiteral("last_30_days")) {
+    start = today.addDays(-29);
+  } else if (p == QStringLiteral("this_month")) {
+    start = QDate(today.year(), today.month(), 1);
+  }
+  return {start.toString(Qt::ISODate), end.toString(Qt::ISODate)};
+}
+
+QStringList AppController::aiExtensionRows() const {
+  if (language_ == QStringLiteral("en")) {
+    return {QStringLiteral("AI extension slot: disabled for now"), QStringLiteral("Reserved inputs: title, summary, tags, angle"),
+            QStringLiteral("Future outputs: topic scoring, rewrite, headline variants")};
+  }
+  return {QStringLiteral("AI 扩展位：当前未启用"), QStringLiteral("预留输入：标题、摘要、标签、角度"),
+          QStringLiteral("未来输出：选题评分、改写、标题变体")};
+}
+
+QString AppController::aiExtensionPayloadPreview(const QString& title, const QString& summary) const {
+  QJsonObject root;
+  root["status"] = QStringLiteral("disabled");
+  root["future_ai_extension"] = QStringLiteral("reserved");
+  root["title"] = title;
+  root["summary"] = summary;
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
+
 int AppController::runHotTypicalCollection(const QString& apiKey, const QString& keyword, const QString& pubType,
                                            const QString& category, int page, const QString& startTime,
                                            const QString& endTime) {
+
   const QString task_keyword = keyword.trimmed().isEmpty() ? QStringLiteral("公众号") : keyword.trimmed();
   const QString key = apiKey.trimmed().isEmpty() ? config_.apiKey() : apiKey.trimmed();
   QString error;
@@ -330,6 +370,12 @@ bool AppController::runFullSelfCheck(const QString& exportDir) {
   setStatus(ok ? QStringLiteral("全流程自检完成") : QStringLiteral("全流程自检失败"));
   emit dataChanged();
   return ok;
+}
+
+void AppController::noteSelection(const QString& area, const QString& value) {
+  const QString clean_area = area.trimmed().isEmpty() ? QStringLiteral("unknown") : area.trimmed();
+  const QString clean_value = value.trimmed().isEmpty() ? QStringLiteral("[empty]") : value.trimmed();
+  setStatus(QStringLiteral("%1 已选中：%2 / Selected: %2").arg(clean_area, clean_value));
 }
 
 void AppController::setStatus(const QString& status) {

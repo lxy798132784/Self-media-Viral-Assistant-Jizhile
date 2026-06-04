@@ -24,6 +24,7 @@ required_calls = [
     "hotTypicalParameterRows",
     "hotTypicalPayloadPreview",
     "runHotTypicalCollection",
+    "noteSelection",
 ]
 required_controls = [
     'text: "中文"', 'text: "English"',
@@ -44,6 +45,19 @@ for param in required_hot_params:
 button_count = text.count("Button {")
 if button_count < 17:
     problems.append(f"expected at least 17 buttons, found {button_count}")
+mouse_count = text.count("MouseArea {")
+if mouse_count < 10:
+    problems.append(f"expected at least 10 clickable displayed surfaces, found {mouse_count}")
+if "SpinBox { id: hotPage" in text and text.count("id: hotPage") != 1:
+    problems.append("duplicate hotPage control id found")
+if "id: hotStart" in text and text.count("id: hotStart") != 1:
+    problems.append("duplicate hotStart control id found")
+if "id: hotEnd" in text and text.count("id: hotEnd") != 1:
+    problems.append("duplicate hotEnd control id found")
+interactive_surfaces = ["StatCard", "Article", "API parameter", "Report", "Topic", "Plugin", "Task", "Run history"]
+for surface in interactive_surfaces:
+    if surface not in text:
+        problems.append(f"missing interactive surface marker: {surface}")
 for forbidden in [" / Dashboard", " / Content Library", " / Analysis Report", " / Topic Recommendations", " / Plugins", " / Settings", "开发", "实现", "布" + "局调整", "占位"]:
     if forbidden in text:
         problems.append(f"forbidden mixed/internal wording: {forbidden}")

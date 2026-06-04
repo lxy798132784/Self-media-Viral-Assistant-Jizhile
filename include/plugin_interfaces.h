@@ -8,9 +8,8 @@
 /**
  * @brief 插件能力接口集合 / Plugin capability interfaces.
  *
- * @details 当前版本提供轻量内置插件注册表；后续可替换为 CTK 动态插件加载。
- *          This lightweight registry mirrors CTK-style extension points and can be
- *          replaced by dynamic CTK plugin loading later.
+ * @details 当前版本提供内置插件注册表和 fail-closed 动态插件元数据扫描；后续可接入 CTK 动态库实例化。
+ *          The current release provides built-ins plus fail-closed dynamic plugin metadata scanning; CTK runtime instantiation can be attached later.
  */
 class ProviderPluginInterface {
  public:
@@ -36,7 +35,11 @@ class AnalyzerPluginInterface {
 class BuiltinPluginRegistry {
  public:
   QStringList plugins() const;
+  QStringList plugins(const QString& plugin_dir) const;
   QStringList dynamicPluginHints(const QString& plugin_dir) const;
+  QStringList dynamicPluginScanReport(const QString& plugin_dir) const;
   QString analyze(const QVector<Article>& articles) const;
   QString exportByPlugin(const QString& plugin_id, const QVector<Article>& articles) const;
+ private:
+  QStringList scanDynamicPluginIds(const QString& plugin_dir, QStringList* report) const;
 };
