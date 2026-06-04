@@ -17,6 +17,7 @@ class CoreTest : public QObject {
   void exportServiceCreatesMarkdownAndXml();
   void clientBuildsSearchPayload();
   void clientBuildsHotTypicalPayload();
+  void clientValidatesOfficialHotTypicalModel();
   void appControllerSupportsLanguageAndHotTypicalApi();
   void pluginRegistryExposesBuiltins();
   void appControllerExposesEndpointAndPluginRows();
@@ -134,6 +135,50 @@ void CoreTest::clientBuildsHotTypicalPayload() {
   QCOMPARE(payload.value("end_time").toString(), QStringLiteral("2026-05-17"));
   QVERIFY(client.hotTypicalParameterNames().contains(QStringLiteral("pub_type")));
   QVERIFY(client.hotTypicalParameterNames().contains(QStringLiteral("end_time")));
+}
+
+void CoreTest::clientValidatesOfficialHotTypicalModel() {
+  JizhiliaClient client;
+  HotTypicalRequest request;
+  request.key = QStringLiteral("official-key");
+  request.keyword = QStringLiteral("AI");
+  request.pub_type = PubType::Repost;
+  request.category = QStringLiteral("30");
+  request.page = QStringLiteral("2");
+  request.start_time = QStringLiteral("2025-08-15");
+  request.end_time = QStringLiteral("2025-08-16");
+  QString error;
+  QVERIFY(client.validateHotTypicalRequest(request, &error));
+  QCOMPARE(client.pubTypeToApiValue(PubType::TextImage), QStringLiteral("0"));
+  QCOMPARE(client.pubTypeToApiValue(PubType::Video), QStringLiteral("5"));
+  QCOMPARE(client.pubTypeToApiValue(PubType::Music), QStringLiteral("7"));
+  QCOMPARE(client.pubTypeToApiValue(PubType::Image), QStringLiteral("8"));
+  QCOMPARE(client.pubTypeToApiValue(PubType::Text), QStringLiteral("10"));
+  QCOMPARE(client.pubTypeToApiValue(PubType::Repost), QStringLiteral("11"));
+  QVERIFY(client.pubTypeFromApiValue(QStringLiteral("11")).has_value());
+  QCOMPARE(client.pubTypeFromApiValue(QStringLiteral("11")).value(), PubType::Repost);
+  QVERIFY(!client.pubTypeFromApiValue(QStringLiteral("9")).has_value());
+  const auto payload = client.buildHotTypicalSearchPayload(request);
+  QCOMPARE(payload.value("key").toString(), QStringLiteral("official-key"));
+  QCOMPARE(payload.value("keyword").toString(), QStringLiteral("AI"));
+  QCOMPARE(payload.value("pub_type").toString(), QStringLiteral("11"));
+  QCOMPARE(payload.value("category").toString(), QStringLiteral("30"));
+  QCOMPARE(payload.value("page").toString(), QStringLiteral("2"));
+  QCOMPARE(payload.value("start_time").toString(), QStringLiteral("2025-08-15"));
+  QCOMPARE(payload.value("end_time").toString(), QStringLiteral("2025-08-16"));
+  request.keyword.reset();
+  QVERIFY(!client.buildHotTypicalSearchPayload(request).contains("keyword"));
+  request.category = QStringLiteral("31");
+  QVERIFY(!client.validateHotTypicalRequest(request, &error));
+  QVERIFY(error.contains(QStringLiteral("category")));
+  request.category = QStringLiteral("0");
+  request.page = QStringLiteral("0");
+  QVERIFY(!client.validateHotTypicalRequest(request, &error));
+  QVERIFY(error.contains(QStringLiteral("page")));
+  request.page = QStringLiteral("1");
+  request.start_time = QStringLiteral("2025-8-15");
+  QVERIFY(!client.validateHotTypicalRequest(request, &error));
+  QVERIFY(error.contains(QStringLiteral("start_time")));
 }
 
 void CoreTest::appControllerSupportsLanguageAndHotTypicalApi() {

@@ -211,13 +211,13 @@ int AppController::runEndpointCollection(const QString& endpointPath, const QStr
 QStringList AppController::hotTypicalParameterRows() const {
   if (language_ == QStringLiteral("en")) {
     return {
-        QStringLiteral("key | required | string | API key"),
-        QStringLiteral("keyword | optional | string | keyword, empty means all"),
-        QStringLiteral("pub_type | required | enum | 0 text+images, 5 video, 7 music, 8 images, 10 text, 11 repost"),
-        QStringLiteral("category | required | enum | 0 all, 1 international, 2 sports, 3 entertainment, 4 society, 5 finance, 6 current affairs, 7 tech, 8 emotion, 9 auto, 10 education, 11 fashion, 12 games, 13 military, 14 travel, 15 food, 16 culture, 17 health, 18 funny, 19 home, 20 anime, 21 pets, 22 maternal, 23 zodiac, 24 history, 25 music, 26 unclassified, 27 general, 28 workplace, 29 agriculture, 30 elder care"),
-        QStringLiteral("page | required | string | page number, first page is 1"),
-        QStringLiteral("start_time | required | date | start date YYYY-MM-DD"),
-        QStringLiteral("end_time | required | date | end date YYYY-MM-DD")};
+          QStringLiteral("API key | required | string"),
+          QStringLiteral("Keyword | optional | string"),
+          QStringLiteral("Content type | required | 0/5/7/8/10/11"),
+          QStringLiteral("Category | required | 0..30"),
+          QStringLiteral("Page | required | string, >= 1"),
+          QStringLiteral("Start date | required | YYYY-MM-DD"),
+          QStringLiteral("End date | required | YYYY-MM-DD")};
   }
   return {
       QStringLiteral("key｜必填｜字符串｜极致了 key"),

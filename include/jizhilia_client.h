@@ -4,7 +4,28 @@
 #include <QNetworkAccessManager>
 #include <QStringList>
 #include <QVector>
+#include <optional>
 #include "article.h"
+
+/**
+ * @brief 官网示例中的爆文类型 / Official hot-article type enum.
+ * @details API values: 0 text-image, 5 video, 7 music, 8 image, 10 text, 11 repost.
+ */
+enum class PubType : int { TextImage = 0, Video = 5, Music = 7, Image = 8, Text = 10, Repost = 11 };
+
+/**
+ * @brief `/fbmain/monitor/v3/hot_typical_search` 请求模型 / Request model.
+ * @details Mirrors the official Apifox sample fields while using Qt/C++20 types.
+ */
+struct HotTypicalRequest {
+  QString category = QStringLiteral("0");
+  QString end_time;
+  QString key;
+  std::optional<QString> keyword;
+  QString page = QStringLiteral("1");
+  PubType pub_type = PubType::TextImage;
+  QString start_time;
+};
 
 /**
  * @brief 极致了 API 客户端 / Jizhilia API client
@@ -49,6 +70,10 @@ class JizhiliaClient : public QObject {
   QJsonObject buildHotTypicalSearchPayload(const QString& api_key, const QString& keyword, const QString& pub_type,
                                            const QString& category, int page, const QString& start_time,
                                            const QString& end_time) const;
+  QJsonObject buildHotTypicalSearchPayload(const HotTypicalRequest& request) const;
+  bool validateHotTypicalRequest(const HotTypicalRequest& request, QString* error_message) const;
+  QString pubTypeToApiValue(PubType pub_type) const;
+  std::optional<PubType> pubTypeFromApiValue(const QString& api_value) const;
 
   /**
    * @brief 返回公众号爆文接口参数名 / Return hot article API parameter names

@@ -5,7 +5,10 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QHttpMultiPart>
+#include <QHttpPart>
 #include <QUrlQuery>
+#include <QRegularExpression>
 #include <QTimer>
 
 JizhiliaClient::JizhiliaClient(QObject* parent) : QObject(parent) {}
@@ -30,15 +33,83 @@ QJsonObject JizhiliaClient::buildGenericPayload(const QString& keyword, int page
 QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const QString& api_key, const QString& keyword, const QString& pub_type,
                                                          const QString& category, int page, const QString& start_time,
                                                          const QString& end_time) const {
+  HotTypicalRequest request;
+  request.key = api_key;
+  const QString clean_keyword = keyword.trimmed();
+  if (!clean_keyword.isEmpty()) request.keyword = clean_keyword;
+  request.pub_type = pubTypeFromApiValue(pub_type).value_or(PubType::TextImage);
+  request.category = category.trimmed().isEmpty() ? QStringLiteral("0") : category.trimmed();
+  request.page = QString::number(qMax(1, page));
+  request.start_time = start_time.trimmed();
+  request.end_time = end_time.trimmed();
+  return buildHotTypicalSearchPayload(request);
+}
+QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const HotTypicalRequest& request) const {
   QJsonObject payload;
-  payload["key"] = api_key;
-  payload["keyword"] = keyword;
-  payload["pub_type"] = pub_type.trimmed().isEmpty() ? QStringLiteral("0") : pub_type.trimmed();
-  payload["category"] = category.trimmed().isEmpty() ? QStringLiteral("0") : category.trimmed();
-  payload["page"] = QString::number(qMax(1, page));
-  payload["start_time"] = start_time;
-  payload["end_time"] = end_time;
+  payload["key"] = request.key.trimmed();
+  payload["pub_type"] = pubTypeToApiValue(request.pub_type);
+  payload["category"] = request.category.trimmed().isEmpty() ? QStringLiteral("0") : request.category.trimmed();
+  bool ok = false;
+  const int page_number = request.page.trimmed().toInt(&ok);
+  payload["page"] = QString::number(ok ? qMax(1, page_number) : 1);
+  payload["start_time"] = request.start_time.trimmed();
+  payload["end_time"] = request.end_time.trimmed();
+  if (request.keyword.has_value()) {
+    const QString clean_keyword = request.keyword.value().trimmed();
+    if (!clean_keyword.isEmpty()) payload["keyword"] = clean_keyword;
+  }
   return payload;
+}
+QString JizhiliaClient::pubTypeToApiValue(PubType pub_type) const {
+  return QString::number(static_cast<int>(pub_type));
+}
+std::optional<PubType> JizhiliaClient::pubTypeFromApiValue(const QString& api_value) const {
+  bool ok = false;
+  const int value = api_value.trimmed().toInt(&ok);
+  if (!ok) return std::nullopt;
+  switch (value) {
+    case 0: return PubType::TextImage;
+    case 5: return PubType::Video;
+    case 7: return PubType::Music;
+    case 8: return PubType::Image;
+    case 10: return PubType::Text;
+    case 11: return PubType::Repost;
+    default: return std::nullopt;
+  }
+}
+bool JizhiliaClient::validateHotTypicalRequest(const HotTypicalRequest& request, QString* error_message) const {
+  if (request.key.trimmed().isEmpty()) {
+    if (error_message) *error_message = QStringLiteral("key is required");
+    return false;
+  }
+  if (request.category.trimmed().isEmpty()) {
+    if (error_message) *error_message = QStringLiteral("category is required");
+    return false;
+  }
+  bool category_ok = false;
+  const int category_value = request.category.trimmed().toInt(&category_ok);
+  if (!category_ok || category_value < 0 || category_value > 30) {
+    if (error_message) *error_message = QStringLiteral("category must be 0..30");
+    return false;
+  }
+  bool page_ok = false;
+  const int page_value = request.page.trimmed().toInt(&page_ok);
+  if (!page_ok || page_value < 1) {
+    if (error_message) *error_message = QStringLiteral("page must be >= 1");
+    return false;
+  }
+  const QRegularExpression date_pattern(QStringLiteral("^\\d{4}-\\d{2}-\\d{2}$"));
+  const auto start_match = date_pattern.match(request.start_time.trimmed());
+  const auto end_match = date_pattern.match(request.end_time.trimmed());
+  if (!start_match.hasMatch() || !QDate::fromString(request.start_time.trimmed(), Qt::ISODate).isValid()) {
+    if (error_message) *error_message = QStringLiteral("start_time must use YYYY-MM-DD");
+    return false;
+  }
+  if (!end_match.hasMatch() || !QDate::fromString(request.end_time.trimmed(), Qt::ISODate).isValid()) {
+    if (error_message) *error_message = QStringLiteral("end_time must use YYYY-MM-DD");
+    return false;
+  }
+  return true;
 }
 QStringList JizhiliaClient::hotTypicalParameterNames() const {
   return {QStringLiteral("key"), QStringLiteral("keyword"), QStringLiteral("pub_type"), QStringLiteral("category"),
@@ -146,13 +217,27 @@ QVector<Article> JizhiliaClient::callHotTypicalSearchBlocking(const QString& bas
                                                               const QString& start_time, const QString& end_time,
                                                               QString* error_message) const {
   const QString endpoint = QStringLiteral("/fbmain/monitor/v3/hot_typical_search");
+  HotTypicalRequest request;
+  request.key = api_key;
+  const QString clean_keyword = keyword.trimmed();
+  if (!clean_keyword.isEmpty()) request.keyword = clean_keyword;
+  request.pub_type = pubTypeFromApiValue(pub_type).value_or(PubType::TextImage);
+  request.category = category.trimmed().isEmpty() ? QStringLiteral("0") : category.trimmed();
+  request.page = QString::number(qMax(1, page));
+  request.start_time = start_time.trimmed();
+  request.end_time = end_time.trimmed();
+  QString validation_error;
+  if (isConfigured(api_key) && !validateHotTypicalRequest(request, &validation_error)) {
+    if (error_message) *error_message = validation_error;
+    return mockEndpointArticles(endpoint, keyword, page);
+  }
   if (!isConfigured(api_key)) {
     if (error_message) *error_message = QStringLiteral("API Key empty, using hot typical mock fallback");
     return mockEndpointArticles(endpoint, keyword, page);
   }
   const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.jizhilia.com") : base_url.trimmed();
   const QString url = root + endpoint;
-  const auto payload = buildHotTypicalSearchPayload(api_key, keyword, pub_type, category, page, start_time, end_time);
+  const auto payload = buildHotTypicalSearchPayload(request);
   for (int attempt = 1; attempt <= 3; ++attempt) {
     const QByteArray body = postMultipartBlocking(url, payload, error_message);
     const auto rows = parseArticlesFromJson(body, keyword);
@@ -185,12 +270,16 @@ QByteArray JizhiliaClient::postJsonBlocking(const QString& url, const QJsonObjec
 QByteArray JizhiliaClient::postMultipartBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
   QNetworkAccessManager manager;
   QNetworkRequest request{QUrl(url)};
-  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-  QUrlQuery form;
+  auto* multi_part = new QHttpMultiPart(QHttpMultiPart::FormDataType);
   for (auto it = payload.begin(); it != payload.end(); ++it) {
-    form.addQueryItem(it.key(), it.value().toVariant().toString());
+    QHttpPart part;
+    part.setHeader(QNetworkRequest::ContentDispositionHeader,
+                   QVariant(QStringLiteral("form-data; name=\"%1\"").arg(it.key())));
+    part.setBody(it.value().toVariant().toString().toUtf8());
+    multi_part->append(part);
   }
-  QNetworkReply* reply = manager.post(request, form.query(QUrl::FullyEncoded).toUtf8());
+  QNetworkReply* reply = manager.post(request, multi_part);
+  multi_part->setParent(reply);
   QEventLoop loop;
   QTimer timer; timer.setSingleShot(true);
   QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
