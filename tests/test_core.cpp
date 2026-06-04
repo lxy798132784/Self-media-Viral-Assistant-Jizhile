@@ -26,6 +26,7 @@ class CoreTest : public QObject {
   void clientClassifiesApiErrorsAndSupportsSmokePlan();
   void appControllerExposesDatePickersAndAiExtensionSlot();
   void appControllerExposesEndpointAndPluginRows();
+  void appControllerClosesInteractiveDetailsAndExports();
 };
 
 void CoreTest::apiCatalogLoadsLocalIndex() {
@@ -280,11 +281,45 @@ void CoreTest::appControllerExposesEndpointAndPluginRows() {
   AppController controller;
   QVERIFY(controller.initialize());
   QVERIFY(!controller.apiEndpointRows(QStringLiteral("公众号")).isEmpty());
-  QVERIFY(controller.pluginRows().contains(QStringLiteral("analyzer:hit-score")));
+  QVERIFY(controller.pluginRows().join("\n").contains(QStringLiteral("analyzer:hit-score")));
   controller.loadMockArticles();
   QVERIFY(controller.pluginAnalysis().contains(QStringLiteral("爆款评分")));
   QVERIFY(controller.runFullSelfCheck(QDir::tempPath()));
   QVERIFY(!controller.runRows().isEmpty());
+}
+
+void CoreTest::appControllerClosesInteractiveDetailsAndExports() {
+  QTemporaryDir dir;
+  QVERIFY(dir.isValid());
+  AppController controller;
+  QVERIFY(controller.initialize());
+  controller.loadMockArticles();
+  const QString article_row = controller.articleRows(QStringLiteral("爆文")).value(0);
+  QVERIFY(!article_row.isEmpty());
+  QVERIFY(controller.articleDetail(article_row).contains(QStringLiteral("summary")));
+  const QString endpoint_row = controller.apiEndpointRows(QStringLiteral("公众号")).value(0);
+  QVERIFY(!endpoint_row.isEmpty());
+  QVERIFY(controller.endpointPathFromRow(endpoint_row).startsWith(QStringLiteral("/")));
+  QVERIFY(controller.runEndpointRow(endpoint_row, QStringLiteral("AI")) > 0);
+  const QString plugin_row = controller.pluginRows().join("\n");
+  QVERIFY(plugin_row.contains(QStringLiteral("exporter:markdown")));
+  QVERIFY(controller.pluginDetail(QStringLiteral("exporter:markdown")).contains(QStringLiteral("Markdown")));
+  QVERIFY(controller.pluginExportPreview(QStringLiteral("exporter:xml")).contains(QStringLiteral("<articles>")));
+  QVERIFY(controller.pluginScanReport(QString()).contains(QStringLiteral("metadata")));
+  const int task_id = controller.createCollectionTask(QStringLiteral("AI task"), QStringLiteral("AI"), 5, 2);
+  QVERIFY(task_id > 0);
+  const QString task_row = controller.taskRows().value(0);
+  QVERIFY(controller.taskDetail(task_row).contains(QStringLiteral("AI task")));
+  QVERIFY(controller.runTaskRow(task_row) > 0);
+  const QString run_row = controller.runRows().value(0);
+  QVERIFY(controller.runDetail(run_row).contains(QStringLiteral("Run receipt")) || controller.runDetail(run_row).contains(QStringLiteral("运行记录")));
+  QVERIFY(controller.hotTypicalSmokePreview(QStringLiteral("[configured]"), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("0"), 1, QStringLiteral("2026-05-01"), QStringLiteral("2026-05-02")).contains(QStringLiteral("preview_only")));
+  const QString report_path = dir.filePath(QStringLiteral("report.md"));
+  QVERIFY(controller.exportReport(report_path));
+  QVERIFY(QFile::exists(report_path));
+  QFile report(report_path);
+  QVERIFY(report.open(QIODevice::ReadOnly | QIODevice::Text));
+  QVERIFY(QString::fromUtf8(report.readAll()).contains(QStringLiteral("爆款评分")));
 }
 
 QTEST_MAIN(CoreTest)

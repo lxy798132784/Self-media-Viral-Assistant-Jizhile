@@ -23,7 +23,18 @@ required_calls = [
     "trText",
     "hotTypicalParameterRows",
     "hotTypicalPayloadPreview",
+    "hotTypicalSmokePreview",
     "runHotTypicalCollection",
+    "articleDetail",
+    "endpointPathFromRow",
+    "runEndpointRow",
+    "pluginDetail",
+    "pluginScanReport",
+    "pluginExportPreview",
+    "taskDetail",
+    "runTaskRow",
+    "runDetail",
+    "exportReport",
     "noteSelection",
 ]
 required_controls = [
@@ -43,11 +54,11 @@ for param in required_hot_params:
     if param not in text:
         problems.append(f"missing hot API parameter in QML: {param}")
 button_count = text.count("Button {")
-if button_count < 17:
-    problems.append(f"expected at least 17 buttons, found {button_count}")
+if button_count < 21:
+    problems.append(f"expected at least 21 buttons, found {button_count}")
 mouse_count = text.count("MouseArea {")
-if mouse_count < 10:
-    problems.append(f"expected at least 10 clickable displayed surfaces, found {mouse_count}")
+if mouse_count < 11:
+    problems.append(f"expected at least 11 clickable displayed surfaces, found {mouse_count}")
 if "SpinBox { id: hotPage" in text and text.count("id: hotPage") != 1:
     problems.append("duplicate hotPage control id found")
 if "id: hotStart" in text and text.count("id: hotStart") != 1:

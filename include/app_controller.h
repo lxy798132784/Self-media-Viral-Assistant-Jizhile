@@ -54,9 +54,22 @@ class AppController : public QObject {
                                           const QString& category, int page, const QString& startTime,
                                           const QString& endTime);
   Q_INVOKABLE QStringList apiEndpointRows(const QString& categoryKeyword = QString()) const;
+  Q_INVOKABLE QString endpointPathFromRow(const QString& endpointRow) const;
+  Q_INVOKABLE int runEndpointRow(const QString& endpointRow, const QString& keyword);
   Q_INVOKABLE QStringList pluginRows() const;
+  Q_INVOKABLE QString pluginDetail(const QString& pluginIdOrRow) const;
+  Q_INVOKABLE QString pluginScanReport(const QString& pluginDir) const;
+  Q_INVOKABLE QString pluginExportPreview(const QString& pluginIdOrRow) const;
   Q_INVOKABLE QString pluginAnalysis() const;
   Q_INVOKABLE int runTaskById(int taskId);
+  Q_INVOKABLE int runTaskRow(const QString& taskRow);
+  Q_INVOKABLE QString taskDetail(const QString& taskRow) const;
+  Q_INVOKABLE QString articleDetail(const QString& articleRow) const;
+  Q_INVOKABLE QString runDetail(const QString& runRow) const;
+  Q_INVOKABLE QString hotTypicalSmokePreview(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                             const QString& category, int page, const QString& startTime,
+                                             const QString& endTime) const;
+  Q_INVOKABLE bool exportReport(const QString& path);
   Q_INVOKABLE QStringList taskRows() const;
   Q_INVOKABLE QStringList runRows() const;
   Q_INVOKABLE bool runFullSelfCheck(const QString& exportDir);

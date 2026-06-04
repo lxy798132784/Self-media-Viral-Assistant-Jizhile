@@ -310,8 +310,99 @@ QStringList AppController::apiEndpointRows(const QString& categoryKeyword) const
 }
 
 QStringList AppController::pluginRows() const {
-  return plugin_registry_.plugins();
+  return plugin_registry_.pluginDescriptors(QStringLiteral("plugins"));
 }
+
+
+QString AppController::endpointPathFromRow(const QString& endpointRow) const {
+  const QStringList parts = endpointRow.split(QStringLiteral("｜"));
+  return parts.isEmpty() ? QString() : parts.last().trimmed();
+}
+
+int AppController::runEndpointRow(const QString& endpointRow, const QString& keyword) {
+  const QString path = endpointPathFromRow(endpointRow);
+  return runEndpointCollection(path, keyword);
+}
+
+QString AppController::articleDetail(const QString& articleRow) const {
+  const QString title = articleRow.split(QStringLiteral("｜")).value(0).trimmed();
+  for (const auto& a : database_.listArticles()) {
+    if (a.title == title || articleRow.contains(a.title)) {
+      QJsonObject root;
+      root["title"] = a.title;
+      root["account"] = a.accountName;
+      root["author"] = a.author;
+      root["url"] = a.url;
+      root["publish_time"] = a.publishTime;
+      root["reads"] = a.readCount;
+      root["likes"] = a.likeCount;
+      root["watches"] = a.watchCount;
+      root["summary"] = a.summary;
+      return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
+  }
+  return QStringLiteral("未找到内容详情 / Article detail not found: %1").arg(articleRow);
+}
+
+QString AppController::pluginDetail(const QString& pluginIdOrRow) const {
+  const QString id = pluginIdOrRow.split(QStringLiteral("｜")).value(0).trimmed();
+  return plugin_registry_.pluginDescriptor(id.isEmpty() ? pluginIdOrRow : id, QStringLiteral("plugins"));
+}
+
+QString AppController::pluginScanReport(const QString& pluginDir) const {
+  const QString dir = pluginDir.trimmed().isEmpty() ? QStringLiteral("plugins") : pluginDir.trimmed();
+  QStringList rows = plugin_registry_.dynamicPluginHints(dir);
+  rows << plugin_registry_.dynamicPluginScanReport(dir);
+  return rows.join(QStringLiteral("\n"));
+}
+
+QString AppController::pluginExportPreview(const QString& pluginIdOrRow) const {
+  const QString id = pluginIdOrRow.split(QStringLiteral("｜")).value(0).trimmed();
+  return plugin_registry_.exportByPlugin(id, database_.listArticles()).left(2000);
+}
+
+QString AppController::taskDetail(const QString& taskRow) const {
+  const int id = taskRow.section(QStringLiteral("｜"), 0, 0).remove(QStringLiteral("#")).toInt();
+  for (const auto& task : database_.listTasks()) {
+    if (task.id == id) {
+      QJsonObject root;
+      root["id"] = task.id;
+      root["name"] = task.name;
+      root["keyword"] = task.keyword;
+      root["endpoint"] = task.endpointPath;
+      root["interval_seconds"] = task.intervalSeconds;
+      root["max_runs"] = task.maxRuns;
+      root["current_runs"] = task.currentRuns;
+      root["enabled"] = task.enabled;
+      return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
+  }
+  return QStringLiteral("未找到任务详情 / Task detail not found: %1").arg(taskRow);
+}
+
+int AppController::runTaskRow(const QString& taskRow) {
+  const int id = taskRow.section(QStringLiteral("｜"), 0, 0).remove(QStringLiteral("#")).toInt();
+  return runTaskById(id);
+}
+
+QString AppController::runDetail(const QString& runRow) const {
+  return QStringLiteral("运行记录 / Run receipt\n%1").arg(runRow.trimmed().isEmpty() ? QStringLiteral("[empty]") : runRow.trimmed());
+}
+
+QString AppController::hotTypicalSmokePreview(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                              const QString& category, int page, const QString& startTime,
+                                              const QString& endTime) const {
+  return client_.hotTypicalSmokePlan(apiKey, keyword, pubType, category, page, startTime, endTime);
+}
+
+bool AppController::exportReport(const QString& path) {
+  const QString target = path.trimmed().isEmpty() ? QDir(QDir::tempPath()).filePath(QStringLiteral("media-hit-report.md")) : path.trimmed();
+  const QString content = generateReport() + QStringLiteral("\n\n---\n") + pluginAnalysis();
+  const bool ok = export_service_.writeTextFile(target, content);
+  setStatus(ok ? QStringLiteral("报告导出完成：%1").arg(target) : QStringLiteral("报告导出失败：%1").arg(target));
+  return ok;
+}
+
 
 QString AppController::pluginAnalysis() const {
   return plugin_registry_.analyze(database_.listArticles());
@@ -357,6 +448,7 @@ bool AppController::runFullSelfCheck(const QString& exportDir) {
   const int endpoint_inserted = runEndpointCollection(QStringLiteral("/fbmain/monitor/v3/web_search"), QStringLiteral("AI"));
   const bool md_ok = exportMarkdown(QDir(dir).filePath(QStringLiteral("media-hit-full-check.md")));
   const bool xml_ok = exportXml(QDir(dir).filePath(QStringLiteral("media-hit-full-check.xml")));
+  const bool report_export_ok = exportReport(QDir(dir).filePath(QStringLiteral("media-hit-full-check-combined-report.md")));
   const QString report_path = QDir(dir).filePath(QStringLiteral("media-hit-full-check-report.txt"));
   QFile report(report_path);
   const bool report_ok = report.open(QIODevice::WriteOnly | QIODevice::Text);
@@ -366,7 +458,7 @@ bool AppController::runFullSelfCheck(const QString& exportDir) {
     report.write(pluginAnalysis().toUtf8());
     report.close();
   }
-  const bool ok = endpoint_inserted > 0 && md_ok && xml_ok && report_ok && QFile::exists(report_path);
+  const bool ok = endpoint_inserted > 0 && md_ok && xml_ok && report_export_ok && report_ok && QFile::exists(report_path);
   setStatus(ok ? QStringLiteral("全流程自检完成") : QStringLiteral("全流程自检失败"));
   emit dataChanged();
   return ok;

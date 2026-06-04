@@ -16,6 +16,7 @@ ApplicationWindow {
     property color textMain: "#e5e7eb"
     property color textSub: "#94a3b8"
     function t(key) { appController.language; return appController.trText(key) }
+    property string detailText: ""
 
     RowLayout {
         anchors.fill: parent
@@ -84,6 +85,12 @@ ApplicationWindow {
                                 TextField { id: dashKeyword; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Keyword, for example AI, parenting, career" : "采集关键词，例如 AI、育儿、职场"; text: "AI" }
                                 Button { text: root.t("collect_now"); onClicked: appController.runCollection(dashKeyword.text) }
                             }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                TextField { id: endpointFilter; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Endpoint category filter" : "接口分类筛选"; text: appController.language === "en" ? "official account" : "公众号" }
+                                Button { text: appController.language === "en" ? "Browse endpoints" : "浏览接口"; onClicked: root.detailText = appController.apiEndpointRows(endpointFilter.text).join("\n") }
+                                Button { text: appController.language === "en" ? "Run first endpoint" : "运行首个接口"; onClicked: { const row = appController.apiEndpointRows(endpointFilter.text)[0]; root.detailText = appController.endpointPathFromRow(row); appController.runEndpointRow(row, dashKeyword.text); } }
+                            }
                             TextArea { id: dashboardGuide; Layout.fillWidth: true; Layout.fillHeight: true; readOnly: true; text: appController.language === "en" ? "Use the Hot Articles API page for the target API endpoint. All documented request parameters have editable controls. Click this panel to refresh the guide status." : "重点使用公众号爆文 API 页面。文档里的所有请求参数都有对应控件可修改。点击本说明面板可刷新状态。"; color: textMain; background: Rectangle { color: panel2; radius: 12 } MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Dashboard guide" : "仪表盘说明", dashboardGuide.text) } }
                         }
                     }
@@ -99,11 +106,12 @@ ApplicationWindow {
                             TextField { id: search; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Search title or account" : "搜索标题或公众号" }
                             RowLayout {
                                 Button { text: appController.language === "en" ? "Refresh" : "刷新"; onClicked: list.model = appController.articleRows(search.text) }
-                                Button { text: appController.language === "en" ? "Export Markdown" : "导出 Markdown"; onClicked: appController.exportMarkdown("/tmp/media-hit-articles.md") }
-                                Button { text: appController.language === "en" ? "Export XML" : "导出 XML"; onClicked: appController.exportXml("/tmp/media-hit-articles.xml") }
+                                Button { text: appController.language === "en" ? "Export Markdown" : "导出 Markdown"; onClicked: { appController.exportMarkdown("/tmp/media-hit-articles.md"); root.detailText = "/tmp/media-hit-articles.md" } }
+                                Button { text: appController.language === "en" ? "Export XML" : "导出 XML"; onClicked: { appController.exportXml("/tmp/media-hit-articles.xml"); root.detailText = "/tmp/media-hit-articles.xml" } }
                                 Button { text: appController.language === "en" ? "Recommend again" : "重新推荐"; onClicked: stack.currentIndex = 4 }
                             }
-                            ListView { id: list; Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: appController.articleRows(search.text); delegate: Rectangle { width: ListView.view.width; height: 58; color: mouse.containsMouse ? "#1e3a8a" : (index % 2 ? "#111827" : "#172033"); radius: 8; Text { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 16; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width - 32 } MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Article" : "内容", modelData) } } }
+                            ListView { id: list; Layout.fillWidth: true; Layout.fillHeight: true; clip: true; model: appController.articleRows(search.text); delegate: Rectangle { width: ListView.view.width; height: 58; color: mouse.containsMouse ? "#1e3a8a" : (index % 2 ? "#111827" : "#172033"); radius: 8; Text { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 16; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width - 32 } MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.detailText = appController.articleDetail(modelData); appController.noteSelection(appController.language === "en" ? "Article" : "内容", modelData) } } } }
+                            TextArea { Layout.fillWidth: true; Layout.preferredHeight: 95; readOnly: true; wrapMode: TextArea.Wrap; text: root.detailText; color: textMain; background: Rectangle { color: panel2; radius: 10; border.color: "#334155" } }
                         }
                     }
                 }
@@ -131,6 +139,7 @@ ComboBox { id: hotCategory; Layout.fillWidth: true; textRole: "label"; valueRole
                             }
                             RowLayout { Layout.fillWidth: true
                                 Button { text: root.t("preview_payload"); onClicked: hotPreview.text = appController.hotTypicalPayloadPreview(hotKey.text, hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text) }
+                                Button { text: appController.language === "en" ? "Smoke plan" : "联调计划"; onClicked: hotPreview.text = appController.hotTypicalSmokePreview(hotKey.text, hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text) }
                                 Button { text: root.t("collect_hot"); onClicked: { appController.runHotTypicalCollection(hotKey.text, hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text); hotPreview.text = appController.hotTypicalPayloadPreview(hotKey.text, hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text); } }
                             }
                             Label { text: appController.language === "en" ? "Parameter coverage" : "参数覆盖"; color: textSub }
@@ -144,7 +153,7 @@ ComboBox { id: hotCategory; Layout.fillWidth: true; textRole: "label"; valueRole
             Rectangle {
                 color: "#0f172a"
                 ColumnLayout { anchors.fill: parent; anchors.margins: 24; spacing: 18
-                    Label { text: root.t("report_title"); color: textMain; font.pixelSize: 30; font.bold: true }
+                    RowLayout { Layout.fillWidth: true; Label { text: root.t("report_title"); color: textMain; font.pixelSize: 30; font.bold: true; Layout.fillWidth: true } Button { text: appController.language === "en" ? "Export report" : "导出报告"; onClicked: { appController.exportReport("/tmp/media-hit-report.md"); root.detailText = "/tmp/media-hit-report.md" } } }
                     TextArea { id: reportView; Layout.fillWidth: true; Layout.fillHeight: true; text: appController.generateReport(); readOnly: true; wrapMode: TextArea.Wrap; color: textMain; background: Rectangle { color: panel2; radius: 12; border.color: "#334155" } MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Report" : "报告", reportView.text.substring(0, 120)) } }
                 }
             }
@@ -153,7 +162,7 @@ ComboBox { id: hotCategory; Layout.fillWidth: true; textRole: "label"; valueRole
                 color: "#0f172a"
                 ColumnLayout { anchors.fill: parent; anchors.margins: 24; spacing: 18
                     Label { text: root.t("topics_title"); color: textMain; font.pixelSize: 30; font.bold: true }
-                    ListView { Layout.fillWidth: true; Layout.fillHeight: true; model: appController.recommendTopics(); spacing: 10; delegate: Rectangle { width: ListView.view.width; height: 64; color: topicMouse.containsMouse ? "#1e3a8a" : panel; radius: 10; border.color: "#334155"; Text { anchors.centerIn: parent; text: modelData; color: textMain; font.pixelSize: 18 } MouseArea { id: topicMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Topic" : "选题", modelData) } } }
+                    ListView { Layout.fillWidth: true; Layout.fillHeight: true; model: appController.recommendTopics(); spacing: 10; delegate: Rectangle { width: ListView.view.width; height: 64; color: topicMouse.containsMouse ? "#1e3a8a" : panel; radius: 10; border.color: "#334155"; Text { anchors.centerIn: parent; text: modelData; color: textMain; font.pixelSize: 18 } MouseArea { id: topicMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.detailText = appController.aiExtensionPayloadPreview(modelData, appController.generateReport().substring(0, 160)); appController.noteSelection(appController.language === "en" ? "Topic" : "选题", modelData) } } }
                 }
             }
 
@@ -163,8 +172,8 @@ ComboBox { id: hotCategory; Layout.fillWidth: true; textRole: "label"; valueRole
                     Label { text: root.t("plugins_title"); color: textMain; font.pixelSize: 30; font.bold: true }
                     Rectangle { Layout.fillWidth: true; Layout.fillHeight: true; color: panel; radius: 18; border.color: "#334155"
                         ColumnLayout { anchors.fill: parent; anchors.margins: 18; spacing: 12
-                            RowLayout { Button { text: appController.language === "en" ? "Refresh plugins" : "刷新插件"; onClicked: pluginList.model = appController.pluginRows() } Button { text: appController.language === "en" ? "Plugin analysis" : "插件分析"; onClicked: pluginReport.text = appController.pluginAnalysis() } }
-                            ListView { id: pluginList; Layout.fillWidth: true; Layout.preferredHeight: 160; model: appController.pluginRows(); delegate: Rectangle { width: ListView.view.width; height: 34; color: pluginMouse.containsMouse ? "#1e293b" : "transparent"; Text { anchors.verticalCenter: parent.verticalCenter; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width } MouseArea { id: pluginMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { pluginReport.text = appController.pluginAnalysis(); appController.noteSelection(appController.language === "en" ? "Plugin" : "插件", modelData) } } } }
+                            RowLayout { Button { text: appController.language === "en" ? "Refresh plugins" : "刷新插件"; onClicked: pluginList.model = appController.pluginRows() } Button { text: appController.language === "en" ? "Plugin analysis" : "插件分析"; onClicked: pluginReport.text = appController.pluginAnalysis() } Button { text: appController.language === "en" ? "Scan metadata" : "扫描元数据"; onClicked: pluginReport.text = appController.pluginScanReport("plugins") } }
+                            ListView { id: pluginList; Layout.fillWidth: true; Layout.preferredHeight: 160; model: appController.pluginRows(); delegate: Rectangle { width: ListView.view.width; height: 34; color: pluginMouse.containsMouse ? "#1e293b" : "transparent"; Text { anchors.verticalCenter: parent.verticalCenter; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width } MouseArea { id: pluginMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { pluginReport.text = appController.pluginDetail(modelData) + "\n\n" + appController.pluginExportPreview(modelData); appController.noteSelection(appController.language === "en" ? "Plugin" : "插件", modelData) } } } }
                             TextArea { id: pluginReport; Layout.fillWidth: true; Layout.fillHeight: true; readOnly: true; wrapMode: TextArea.Wrap; text: appController.pluginAnalysis(); color: textMain; background: Rectangle { color: panel2; radius: 12; border.color: "#334155" } MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Plugin analysis" : "插件分析", pluginReport.text.substring(0, 120)) } }
                         }
                     }
@@ -180,16 +189,16 @@ ComboBox { id: hotCategory; Layout.fillWidth: true; textRole: "label"; valueRole
                             TextField { id: taskName; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Task name" : "任务名称"; text: appController.language === "en" ? "AI hot article monitor" : "AI 爆文监控" }
                             TextField { id: taskKeyword; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Keyword" : "关键词"; text: "AI" }
                             RowLayout { SpinBox { id: taskInterval; from: 5; to: 86400; value: 300; editable: true } SpinBox { id: taskRuns; from: 1; to: 9999; value: 10; editable: true } Button { text: appController.language === "en" ? "Save collection task" : "保存采集任务"; onClicked: { appController.createCollectionTask(taskName.text, taskKeyword.text, taskInterval.value, taskRuns.value); tasks.model = appController.taskRows(); } } Button { text: root.t("collect_now"); onClicked: { appController.runCollection(taskKeyword.text); tasks.model = appController.taskRows(); } } }
-                            ListView { id: tasks; Layout.fillWidth: true; Layout.preferredHeight: 100; model: appController.taskRows(); delegate: Rectangle { width: ListView.view.width; height: 32; color: taskMouse.containsMouse ? "#1e293b" : "transparent"; Text { anchors.verticalCenter: parent.verticalCenter; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width } MouseArea { id: taskMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Task" : "任务", modelData) } } }
+                            ListView { id: tasks; Layout.fillWidth: true; Layout.preferredHeight: 100; model: appController.taskRows(); delegate: Rectangle { width: ListView.view.width; height: 32; color: taskMouse.containsMouse ? "#1e293b" : "transparent"; Text { anchors.verticalCenter: parent.verticalCenter; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width } MouseArea { id: taskMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.detailText = appController.taskDetail(modelData); appController.runTaskRow(modelData); runHistory.model = appController.runRows(); appController.noteSelection(appController.language === "en" ? "Task" : "任务", modelData) } } } }
                             Label { text: appController.language === "en" ? "Run history" : "运行历史"; color: textSub; Layout.fillWidth: true }
-                            ListView { id: runHistory; Layout.fillWidth: true; Layout.preferredHeight: 100; model: appController.runRows(); delegate: Rectangle { width: ListView.view.width; height: 30; color: runMouse.containsMouse ? "#1e293b" : "transparent"; Text { anchors.verticalCenter: parent.verticalCenter; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width } MouseArea { id: runMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(appController.language === "en" ? "Run history" : "运行历史", modelData) } } }
+                            ListView { id: runHistory; Layout.fillWidth: true; Layout.preferredHeight: 100; model: appController.runRows(); delegate: Rectangle { width: ListView.view.width; height: 30; color: runMouse.containsMouse ? "#1e293b" : "transparent"; Text { anchors.verticalCenter: parent.verticalCenter; text: modelData; color: textMain; elide: Text.ElideRight; width: parent.width } MouseArea { id: runMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.detailText = appController.runDetail(modelData); appController.noteSelection(appController.language === "en" ? "Run history" : "运行历史", modelData) } } } }
                             TextField { id: apiKey; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Jizhilia API key" : "极致了 API Key"; echoMode: TextInput.Password }
                             TextField { id: verify; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "Verify code" : "验证码" }
                             SpinBox { id: interval; from: 5; to: 86400; value: 300; editable: true }
                             SpinBox { id: runs; from: 1; to: 9999; value: 10; editable: true }
                             TextField { id: qps; Layout.fillWidth: true; placeholderText: appController.language === "en" ? "QPS limit, for example 1.5" : "QPS 限制，例如 1.5"; text: "1.5" }
                             Button { text: appController.language === "en" ? "Save settings" : "保存设置"; onClicked: appController.saveSettings(apiKey.text, verify.text, interval.value, runs.value, Number(qps.text)) }
-                            Label { text: appController.language === "en" ? "The API key is stored only in local settings. Sample mode does not call the real API." : "API Key 只保存在本机设置中；示例模式不会调用真实接口。"; color: textSub; wrapMode: Text.WordWrap; Layout.fillWidth: true }
+                            Label { text: appController.language === "en" ? "The API key is stored only in local settings. Sample mode does not call the real API." : "API Key 只保存在本机设置中；示例模式不会调用真实接口。"; color: textSub; wrapMode: Text.WordWrap; Layout.fillWidth: true; MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.detailText = appController.hotTypicalSmokePreview(apiKey.text, taskKeyword.text, "0", "0", 1, "2026-05-01", "2026-05-02") } }
                         }
                     }
                 }
@@ -209,4 +218,5 @@ ComboBox { id: hotCategory; Layout.fillWidth: true; textRole: "label"; valueRole
         Column { anchors.fill: parent; anchors.margins: 16; spacing: 8; Text { text: title; color: textSub; font.pixelSize: 14 } Text { text: value; color: textMain; font.pixelSize: 30; font.bold: true } Text { text: desc; color: textSub; wrapMode: Text.WordWrap; width: parent.width } }
         MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: appController.noteSelection(title, value + " " + desc) }
     }
+}
 }

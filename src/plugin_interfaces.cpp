@@ -28,6 +28,24 @@ QStringList BuiltinPluginRegistry::plugins(const QString& plugin_dir) const {
   return rows;
 }
 
+QStringList BuiltinPluginRegistry::pluginDescriptors(const QString& plugin_dir) const {
+  QStringList rows;
+  for (const auto& id : plugins(plugin_dir)) rows << pluginDescriptor(id, plugin_dir);
+  return rows;
+}
+
+QString BuiltinPluginRegistry::pluginDescriptor(const QString& plugin_id, const QString& plugin_dir) const {
+  const QString id = plugin_id.trimmed();
+  if (id == QStringLiteral("provider:jizhilia")) return QStringLiteral("provider:jizhilia｜极致了内容采集｜支持真实 API 与本地示例回退");
+  if (id == QStringLiteral("exporter:markdown")) return QStringLiteral("exporter:markdown｜Markdown 导出｜生成可编辑内容归档");
+  if (id == QStringLiteral("exporter:xml")) return QStringLiteral("exporter:xml｜XML 导出｜生成结构化机器可读归档");
+  if (id == QStringLiteral("analyzer:hit-score")) return QStringLiteral("analyzer:hit-score｜爆款评分分析｜阅读/点赞/在看综合打分");
+  for (const auto& line : dynamicPluginScanReport(plugin_dir)) {
+    if (line.contains(id)) return QStringLiteral("%1｜动态插件元数据｜%2").arg(id, line);
+  }
+  return QStringLiteral("%1｜未知插件｜已按 fail-closed 策略仅展示不执行").arg(id.isEmpty() ? QStringLiteral("[empty]") : id);
+}
+
 QStringList BuiltinPluginRegistry::dynamicPluginHints(const QString& plugin_dir) const {
   return {
       QStringLiteral("CTK plugin directory: %1").arg(plugin_dir.isEmpty() ? QStringLiteral("plugins") : plugin_dir),

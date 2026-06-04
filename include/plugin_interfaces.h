@@ -36,6 +36,8 @@ class BuiltinPluginRegistry {
  public:
   QStringList plugins() const;
   QStringList plugins(const QString& plugin_dir) const;
+  QStringList pluginDescriptors(const QString& plugin_dir) const;
+  QString pluginDescriptor(const QString& plugin_id, const QString& plugin_dir = QString()) const;
   QStringList dynamicPluginHints(const QString& plugin_dir) const;
   QStringList dynamicPluginScanReport(const QString& plugin_dir) const;
   QString analyze(const QVector<Article>& articles) const;
