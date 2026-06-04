@@ -82,7 +82,12 @@ QString AppController::trText(const QString& key) const {
   if (key == QStringLiteral("report_title")) return en ? QStringLiteral("Analysis Report") : QStringLiteral("拆解报告");
   if (key == QStringLiteral("topics_title")) return en ? QStringLiteral("Topic Recommendations") : QStringLiteral("选题推荐");
   if (key == QStringLiteral("plugins_title")) return en ? QStringLiteral("Plugins") : QStringLiteral("插件");
+  if (key == QStringLiteral("api_browser_title")) return en ? QStringLiteral("API Endpoints") : QStringLiteral("接口浏览器");
+  if (key == QStringLiteral("runs_title")) return en ? QStringLiteral("Run History") : QStringLiteral("运行历史");
   if (key == QStringLiteral("settings_title")) return en ? QStringLiteral("Settings") : QStringLiteral("设置");
+  if (key == QStringLiteral("run_endpoint")) return en ? QStringLiteral("Run selected endpoint") : QStringLiteral("运行选中接口");
+  if (key == QStringLiteral("run_task")) return en ? QStringLiteral("Run selected task") : QStringLiteral("运行选中任务");
+  if (key == QStringLiteral("refresh_runs")) return en ? QStringLiteral("Refresh history") : QStringLiteral("刷新历史");
   if (key == QStringLiteral("load_samples")) return en ? QStringLiteral("Load sample data") : QStringLiteral("加载示例数据");
   if (key == QStringLiteral("self_check")) return en ? QStringLiteral("Full self-test") : QStringLiteral("全流程自检");
   if (key == QStringLiteral("collect_now")) return en ? QStringLiteral("Collect now") : QStringLiteral("立即采集");
