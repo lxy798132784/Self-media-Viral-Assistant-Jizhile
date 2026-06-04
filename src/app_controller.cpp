@@ -391,7 +391,7 @@ int AppController::runHotTypicalCollection(const QString& apiKey, const QString&
 QStringList AppController::hotTypicalResultRows() const {
   QStringList rows;
   for (const auto& a : hot_typical_results_) {
-    rows << QStringLiteral("%1｜%2｜%3｜爆值 %4｜阅读 %5｜点赞 %6｜均读 %7｜粉丝 %8｜%9")
+    rows << QStringLiteral("%1｜%2｜%3｜%4｜%5｜%6｜%7｜%8｜%9")
               .arg(a.title, a.accountName.isEmpty() ? a.author : a.accountName, a.publishTime)
               .arg(a.hotScore, 0, 'f', 1).arg(a.readCount).arg(a.likeCount).arg(a.avgReadCount).arg(a.fansCount).arg(a.url);
   }

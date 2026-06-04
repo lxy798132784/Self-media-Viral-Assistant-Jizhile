@@ -56,6 +56,36 @@ ApplicationWindow {
         var cells = String(rowText).split("｜")
         return column < cells.length ? cells[column] : ""
     }
+    property var hotWidths: [52, 380, 170, 150, 88, 108, 92, 108, 108]
+    function hotTableWidth() { var n = 0; for (var i = 0; i < hotWidths.length; ++i) n += hotWidths[i]; return n }
+    function resizeHotColumn(column, delta) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, next[column] + delta); hotWidths = next }
+    function compactNumber(value) {
+        var n = Number(String(value).replace(/[^0-9.\-]/g, ""))
+        if (!isFinite(n)) return value
+        if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, "") + (appController.language === "en" ? "B" : "亿")
+        if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, "") + (appController.language === "en" ? "w" : "万")
+        return Math.round(n).toString()
+    }
+    function hotDisplayCell(rowText, column) {
+        var v = hotCell(rowText, column)
+        if (column >= 4 && column <= 7) return compactNumber(v)
+        return v
+    }
+    function hotRowDetail(rowText) {
+        var title = hotCell(rowText, 0)
+        var account = hotCell(rowText, 1)
+        var published = hotCell(rowText, 2)
+        var hot = hotCell(rowText, 3)
+        var reads = hotCell(rowText, 4)
+        var likes = hotCell(rowText, 5)
+        var avg = hotCell(rowText, 6)
+        var fans = hotCell(rowText, 7)
+        var url = hotCell(rowText, 8)
+        if (appController.language === "en") {
+            return "Title: " + title + "\nAccount: " + account + "\nPublished: " + published + "\nHot score: " + hot + "\nReads: " + compactNumber(reads) + " (" + reads + ")\nLikes: " + compactNumber(likes) + " (" + likes + ")\nAvg reads: " + compactNumber(avg) + " (" + avg + ")\nFans: " + compactNumber(fans) + " (" + fans + ")\nLink: " + url
+        }
+        return "标题：" + title + "\n账号：" + account + "\n发布时间：" + published + "\n爆值：" + hot + "\n阅读：" + compactNumber(reads) + "（" + reads + "）\n点赞：" + compactNumber(likes) + "（" + likes + "）\n均读：" + compactNumber(avg) + "（" + avg + "）\n粉丝：" + compactNumber(fans) + "（" + fans + "）\n链接：" + url
+    }
     function hotExportPath(format) {
         var ext = format === "xml" ? "xml" : (format === "xls" ? "xls" : "md")
         return (appController.language === "en" ? "hot-article-results" : "爆文解析结果") + "." + ext
@@ -63,28 +93,28 @@ ApplicationWindow {
     function guide(key) {
         appController.language
         var zh = {
-            dashboard: "总览页只放关键状态和轻量操作，避免点击后卡住。所有卡片、列表、按钮都有明确反馈。",
-            library: "本地内容库支持搜索、刷新、查看详情和导出。列表区域独立滚动，不会压住底部详情。",
-            hot: "参数按类型选择控件：密钥用密码框，枚举用下拉框，页码用数字框，日期用日期选择器。",
-            results: "解析结果独立成表格页，类似 Excel：固定表头、单元格、行选择、横向和纵向滚动。",
-            report: "报告页展示可导出的内容拆解结果。",
-            topics: "选题推荐以卡片列表展示，点击可查看后续处理输入预览。",
-            plugins: "插件页展示内置能力，分析区和列表分区显示，避免文字压到控件下方。",
-            api_browser: "接口浏览器列出内容数据全部可用接口，可按分类筛选、选中一行后用当前关键词直接采集。先在列表里选接口，再点运行，避免误触发付费请求。",
-            runs: "运行历史记录每次采集的时间、状态、新增条数和返回信息。点任意一行可查看该次运行回执。",
-            settings: "设置页用分组表单，所有输入都有 label 和说明。"
+            dashboard: "查看内容数量、阅读点赞汇总和最近操作状态，适合快速确认当前数据情况。",
+            library: "搜索本地内容库，查看文章详情并导出结果。列表区域可独立滚动。",
+            hot: "设置关键词、类型、分类、页码和日期范围后采集真实爆文数据。",
+            results: "按标题、账号、时间和核心指标查看解析结果。表格支持横向滚动、纵向滚动、选中行查看详情，并可拖动表头分隔线调整列宽。",
+            report: "查看可复制、可导出的内容拆解摘要。",
+            topics: "查看选题建议，点击卡片可预览后续处理内容。",
+            plugins: "查看当前可用能力与分析结果。",
+            api_browser: "按分类筛选内容数据接口，选中接口后用关键词运行采集。先选中再运行，避免误触发请求。",
+            runs: "查看每次采集的时间、状态、新增条数和返回信息。点击任意记录可查看该次回执。",
+            settings: "管理采集任务、密钥和运行限制。"
         }
         var en = {
-            dashboard: "The overview keeps only key status and light actions so clicks do not freeze the UI. Every card, list, and button has feedback.",
-            library: "The local library supports search, refresh, details, and export. The list scrolls independently.",
-            hot: "Parameters use semantic controls: password for secret, combo boxes for enums, spin boxes for pages, and date pickers for dates.",
-            results: "Parsed results live on a separate Excel-like table page with fixed headers, cells, row selection, and two-axis scrolling.",
-            report: "The report page shows exportable content analysis.",
-            topics: "Topic ideas are displayed as cards. Click one to preview the next-step input.",
-            plugins: "The plugin page separates capability lists and analysis text to avoid text under controls.",
-            api_browser: "The API browser lists every available Jizhile endpoint. Filter by category, select a row, then collect with the current keyword. Select first, then run, to avoid accidental paid requests.",
-            runs: "Run history records the time, status, inserted count, and message of each collection. Click any row to see that run receipt.",
-            settings: "Settings use grouped forms; every input has a label and help text."
+            dashboard: "View content counts, read/like summaries, and the latest operation status.",
+            library: "Search the local content library, view details, and export results. The list scrolls independently.",
+            hot: "Collect real hot-article data with keyword, type, category, page, and date filters.",
+            results: "Review parsed results by title, account, time, and key metrics. The table supports horizontal/vertical scrolling, row details, and draggable column dividers.",
+            report: "View copyable and exportable content breakdown summaries.",
+            topics: "Review topic ideas and click cards to preview next-step content.",
+            plugins: "View available capabilities and analysis output.",
+            api_browser: "Filter content-data endpoints by category, select one, then run it with a keyword. Select first to avoid accidental requests.",
+            runs: "Review each collection time, status, inserted count, and response message. Click any record to see its receipt.",
+            settings: "Manage collection tasks, credentials, and runtime limits."
         }
         return appController.language === "en" ? en[key] : zh[key]
     }
@@ -164,13 +194,13 @@ ApplicationWindow {
                     StatCard { title: appController.language === "en" ? "Reads" : "总阅读"; value: appController.totalReads.toString(); desc: appController.language === "en" ? "Local summary" : "本地汇总" }
                     StatCard { title: appController.language === "en" ? "Likes" : "总点赞"; value: appController.totalLikes.toString(); desc: appController.language === "en" ? "Local summary" : "本地汇总" }
                 }
-                Card { cardHeight: 270; cardTitle: appController.language === "en" ? "Quick actions" : "快捷操作"; cardSubtitle: appController.language === "en" ? "Lightweight actions only. Heavy diagnostics stay in self-test/package scripts." : "这里只放轻量操作，避免仪表盘点击卡住。"
+                Card { cardHeight: 270; cardTitle: appController.language === "en" ? "Quick actions" : "快捷操作"; cardSubtitle: appController.language === "en" ? "Start from keyword collection or review the latest status." : "从关键词采集开始，或查看最近状态。"
                     ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 12
                         FormText { id: dashKeyword; label: appController.language === "en" ? "Keyword" : "关键词"; hint: appController.language === "en" ? "Used by quick collection" : "用于快速采集"; text: "AI" }
                         RowLayout { Layout.fillWidth: true; spacing: 10
                             AppButton { text: root.t("load_samples"); ToolTip.visible: hovered; ToolTip.text: "加载本地示例"; onClicked: { appController.loadMockArticles(); setDetail(text, appController.status) } }
                             AppButton { text: root.t("collect_now"); highlighted: true; ToolTip.visible: hovered; ToolTip.text: "按关键词立即采集"; onClicked: { appController.runCollection(dashKeyword.text); setDetail(text, appController.status) } }
-                            AppButton { text: root.t("self_check"); ToolTip.visible: hovered; ToolTip.text: "查看自检入口说明，不在仪表盘同步跑重任务"; onClicked: setDetail(text, appController.language === "en" ? "Use run-with-log.bat or --self-test for full diagnostics." : "完整诊断请运行 run-with-log.bat 或 --self-test，避免界面卡住。") }
+                            AppButton { text: root.t("self_check"); ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "View current application status" : "查看当前应用状态"; onClicked: setDetail(text, appController.status) }
                         }
                     }
                 }
@@ -180,7 +210,7 @@ ApplicationWindow {
             }
 
             PageFrame { pageTitle: root.t("library_title"); pageGuide: root.guide("library")
-                Card { cardHeight: 250; cardTitle: appController.language === "en" ? "Search and actions" : "搜索与操作"; cardSubtitle: appController.language === "en" ? "Clear labels and separated action buttons" : "输入和按钮分区显示，不挤在一行"
+                Card { cardHeight: 250; cardTitle: appController.language === "en" ? "Search and actions" : "搜索与操作"; cardSubtitle: appController.language === "en" ? "Search by title or account, then export results." : "按标题或账号搜索，并导出结果。"
                     ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 12
                         FormText { id: search; label: appController.language === "en" ? "Search" : "搜索"; hint: appController.language === "en" ? "Title or account" : "标题或账号" }
                         RowLayout { Layout.fillWidth: true; spacing: 10
@@ -205,7 +235,7 @@ ApplicationWindow {
             }
 
             PageFrame { pageTitle: root.t("hot_api_title"); pageGuide: root.guide("hot")
-                Card { cardHeight: 680; cardTitle: appController.language === "en" ? "Request parameters" : "采集参数"; cardSubtitle: appController.language === "en" ? "Every field has a label, type, and help text" : "每个字段都有名称、类型和说明"
+                Card { cardHeight: 680; cardTitle: appController.language === "en" ? "Request parameters" : "采集参数"; cardSubtitle: appController.language === "en" ? "Set the collection range before requesting data." : "先设置采集范围，再发起请求。"
                     ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 14
                         GridLayout { Layout.fillWidth: true; columns: root.width > 1240 ? 2 : 1; columnSpacing: 18; rowSpacing: 14
                             FormText { id: hotKey; label: appController.language === "en" ? "Secret key" : "密钥"; hint: appController.language === "en" ? "Secret key; blank uses local sample" : "密钥；留空使用本地示例"; password: true }
@@ -233,7 +263,7 @@ ApplicationWindow {
                         }
                     }
                 }
-                Card { cardHeight: 280; cardTitle: appController.language === "en" ? "Request preview" : "请求预览"; cardSubtitle: appController.language === "en" ? "Readonly parameter preview" : "只读参数预览"
+                Card { cardHeight: 280; cardTitle: appController.language === "en" ? "Request preview" : "请求预览"; cardSubtitle: appController.language === "en" ? "Review the request that will be sent." : "查看即将发送的请求内容。"
                     DetailBox { id: payloadPreview; text: appController.hotTypicalPayloadPreview("[empty]", hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text) }
                 }
             }
@@ -391,8 +421,8 @@ ApplicationWindow {
         spacing: 6
         Label { text: label; color: textMain; font.pixelSize: 14; font.bold: true; Layout.fillWidth: true }
         RowLayout { Layout.fillWidth: true; spacing: 8
-            TextField { id: input; Layout.fillWidth: true; placeholderText: placeholder || hint; echoMode: password && !show.checked ? TextInput.Password : TextInput.Normal; color: textMain; selectedTextColor: "#020617"; selectionColor: accent; ToolTip.visible: hovered; ToolTip.text: label + " · " + hint; background: Rectangle { color: fieldBg; radius: 10; border.color: input.activeFocus ? accent : lineStrong } }
-            AppButton { id: show; visible: password; checkable: true; text: checked ? (appController.language === "en" ? "Hide" : "隐藏") : (appController.language === "en" ? "Show" : "显示"); ToolTip.visible: hovered; ToolTip.text: "显示或隐藏" }
+            TextField { id: input; Layout.fillWidth: true; Layout.preferredHeight: 40; placeholderText: placeholder || hint; echoMode: password && !show.checked ? TextInput.Password : TextInput.Normal; color: textMain; selectedTextColor: "#020617"; selectionColor: accent; ToolTip.visible: hovered; ToolTip.text: label + " · " + hint; background: Rectangle { color: fieldBg; radius: 10; border.color: input.activeFocus ? accent : lineStrong } }
+            AppButton { id: show; visible: password; Layout.preferredHeight: 40; checkable: true; text: checked ? (appController.language === "en" ? "Hide" : "隐藏") : (appController.language === "en" ? "Show" : "显示"); ToolTip.visible: hovered; ToolTip.text: "显示或隐藏" }
         }
         Label { text: hint; color: textMuted; font.pixelSize: 12; wrapMode: Text.WordWrap; Layout.fillWidth: true }
     }
@@ -420,7 +450,50 @@ ApplicationWindow {
         Layout.minimumWidth: 320
         spacing: 6
         Label { text: label; color: textMain; font.pixelSize: 14; font.bold: true; Layout.fillWidth: true }
-        SpinBox { id: spin; Layout.fillWidth: true; from: fromValue; to: toValue; value: currentValue; editable: true; ToolTip.visible: hovered; ToolTip.text: label + " · " + hint }
+        SpinBox {
+            id: spin
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            from: fromValue
+            to: toValue
+            value: currentValue
+            editable: true
+            font.pixelSize: 14
+            hoverEnabled: true
+            ToolTip.visible: hovered
+            ToolTip.text: label + " · " + hint
+            contentItem: TextInput {
+                z: 2
+                text: spin.textFromValue(spin.value, spin.locale)
+                font: spin.font
+                color: textMain
+                selectedTextColor: "#020617"
+                selectionColor: accent
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                readOnly: !spin.editable
+                validator: spin.validator
+                inputMethodHints: Qt.ImhFormattedNumbersOnly
+            }
+            up.indicator: Rectangle {
+                x: spin.width - width
+                height: spin.height / 2
+                width: 34
+                color: spin.up.pressed ? "#24ffffff" : (spin.hovered ? "#14ffffff" : "transparent")
+                border.color: line
+                Text { anchors.centerIn: parent; text: "+"; color: textSub; font.bold: true }
+            }
+            down.indicator: Rectangle {
+                x: spin.width - width
+                y: spin.height / 2
+                height: spin.height / 2
+                width: 34
+                color: spin.down.pressed ? "#24ffffff" : (spin.hovered ? "#14ffffff" : "transparent")
+                border.color: line
+                Text { anchors.centerIn: parent; text: "−"; color: textSub; font.bold: true }
+            }
+            background: Rectangle { color: fieldBg; radius: 10; border.color: spin.activeFocus || spin.hovered ? accent : lineStrong }
+        }
         Label { text: hint; color: textMuted; font.pixelSize: 12; wrapMode: Text.WordWrap; Layout.fillWidth: true }
     }
 
@@ -433,24 +506,42 @@ ApplicationWindow {
         spacing: 6
         Label { text: label; color: textMain; font.pixelSize: 14; font.bold: true; Layout.fillWidth: true }
         RowLayout { Layout.fillWidth: true; spacing: 8
-            TextField { id: dateText; Layout.fillWidth: true; readOnly: true; color: textMain; ToolTip.visible: hovered; ToolTip.text: label + " · YYYY-MM-DD"; background: Rectangle { color: fieldBg; radius: 10; border.color: lineStrong } }
-            AppButton { text: appController.language === "en" ? "Pick" : "选择"; ToolTip.visible: hovered; ToolTip.text: "打开日期选择器"; onClicked: { var p = dateText.text.split("-"); yearBox.value = Number(p[0]); monthBox.value = Number(p[1]); dayBox.value = Number(p[2]); picker.open() } }
+            TextField { id: dateText; Layout.fillWidth: true; Layout.preferredHeight: 40; readOnly: true; color: textMain; ToolTip.visible: hovered; ToolTip.text: label + " · YYYY-MM-DD"; background: Rectangle { color: fieldBg; radius: 10; border.color: lineStrong } }
+            AppButton { text: appController.language === "en" ? "Pick" : "选择"; Layout.preferredHeight: 40; ToolTip.visible: hovered; ToolTip.text: "打开日期选择器"; onClicked: { var p = dateText.text.split("-"); yearBox.value = Number(p[0]); monthBox.value = Number(p[1]); dayBox.value = Number(p[2]); picker.open() } }
         }
         Label { text: hint; color: textMuted; font.pixelSize: 12; wrapMode: Text.WordWrap; Layout.fillWidth: true }
         Dialog { id: picker; modal: true; title: label; standardButtons: Dialog.Ok | Dialog.Cancel; onAccepted: dateText.text = yearBox.value + "-" + (monthBox.value < 10 ? "0" : "") + monthBox.value + "-" + (dayBox.value < 10 ? "0" : "") + dayBox.value; background: Rectangle { color: panel; radius: 18; border.color: lineStrong } contentItem: ColumnLayout { spacing: 12; Label { text: appController.language === "en" ? "Choose date" : "选择日期"; color: textMain; font.bold: true } RowLayout { SpinBox { id: yearBox; from: 2020; to: 2035; value: 2026; editable: true; ToolTip.visible: hovered; ToolTip.text: "年份" } SpinBox { id: monthBox; from: 1; to: 12; value: 5; editable: true; ToolTip.visible: hovered; ToolTip.text: "月份" } SpinBox { id: dayBox; from: 1; to: 31; value: 15; editable: true; ToolTip.visible: hovered; ToolTip.text: "日期" } } } }
     }
 
-    component DetailBox: TextArea {
-        readOnly: true
-        wrapMode: TextArea.Wrap
-        color: textMain
-        selectedTextColor: "#020617"
-        selectionColor: accent
-        ToolTip.visible: hovered
-        ToolTip.text: appController.language === "en" ? "Readonly details" : "只读详情"
-        background: Rectangle { color: fieldBg; radius: 12; border.color: line }
+    component DetailBox: Rectangle {
+        id: detailBox
+        property string text: ""
         anchors.fill: parent
         anchors.margins: 16
+        color: fieldBg
+        radius: 12
+        border.color: line
+        clip: true
+        Flickable {
+            id: detailFlick
+            anchors.fill: parent
+            anchors.margins: 12
+            clip: true
+            contentWidth: width
+            contentHeight: detailText.height
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            Text {
+                id: detailText
+                width: detailFlick.width
+                text: detailBox.text
+                color: textMain
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                font.pixelSize: 14
+            }
+        }
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.IBeamCursor; ToolTip.visible: containsMouse; ToolTip.text: appController.language === "en" ? "Details" : "详情" }
     }
 
     component RowCard: Rectangle {
@@ -547,7 +638,7 @@ ApplicationWindow {
                 AppButton { text: appController.language === "en" ? "Export..." : "导出..."; ToolTip.visible: hovered; ToolTip.text: "选择格式和路径"; onClicked: exportDialog.openForHotResults() }
             }
             DataGrid { Layout.fillWidth: true; Layout.fillHeight: true }
-            TextArea { Layout.fillWidth: true; Layout.preferredHeight: 86; readOnly: true; wrapMode: TextArea.Wrap; text: selectedHotRow >= 0 && selectedHotRow < hotRows.length ? hotRows[selectedHotRow] : root.guide("results"); color: textMain; ToolTip.visible: hovered; ToolTip.text: "选中行详情"; background: Rectangle { color: fieldBg; radius: 12; border.color: line } }
+            DetailPanel { Layout.fillWidth: true; Layout.preferredHeight: 150; text: selectedHotRow >= 0 && selectedHotRow < hotRows.length ? root.hotRowDetail(hotRows[selectedHotRow]) : (appController.language === "en" ? "Select a row to view title, metrics, and link." : "选择一行后查看标题、指标和链接。") }
         }
     }
 
@@ -556,32 +647,115 @@ ApplicationWindow {
         radius: 16
         border.color: line
         clip: true
-        ColumnLayout { anchors.fill: parent; spacing: 0
-            Row { Layout.fillWidth: true; height: 42
-                HeaderCell { text: "#"; w: 52 }
-                HeaderCell { text: appController.language === "en" ? "Title" : "标题"; w: 340 }
-                HeaderCell { text: appController.language === "en" ? "Account" : "账号"; w: 170 }
-                HeaderCell { text: appController.language === "en" ? "Published" : "发布时间"; w: 130 }
-                HeaderCell { text: appController.language === "en" ? "Hot" : "爆值"; w: 90 }
-                HeaderCell { text: appController.language === "en" ? "Reads" : "阅读"; w: 110 }
-                HeaderCell { text: appController.language === "en" ? "Likes" : "点赞"; w: 110 }
-                HeaderCell { text: appController.language === "en" ? "Avg" : "均读"; w: 110 }
-                HeaderCell { text: appController.language === "en" ? "Fans" : "粉丝"; w: 110 }
-                HeaderCell { text: appController.language === "en" ? "Link" : "链接"; w: 340 }
-            }
-            ScrollView { Layout.fillWidth: true; Layout.fillHeight: true; clip: true; ScrollBar.horizontal.policy: ScrollBar.AlwaysOn; ScrollBar.vertical.policy: ScrollBar.AsNeeded
-                Column { width: 1562
-                    Repeater { model: root.hotRows
-                        DataRow { rowIndex: index; rowText: modelData }
-                    }
+        ScrollView {
+            anchors.fill: parent
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
+            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+            Column {
+                width: root.hotTableWidth()
+                Row { width: root.hotTableWidth(); height: 44
+                    HeaderCell { text: "#"; column: 0 }
+                    HeaderCell { text: appController.language === "en" ? "Title" : "标题"; column: 1 }
+                    HeaderCell { text: appController.language === "en" ? "Account" : "账号"; column: 2 }
+                    HeaderCell { text: appController.language === "en" ? "Published" : "发布时间"; column: 3 }
+                    HeaderCell { text: appController.language === "en" ? "Hot" : "爆值"; column: 4 }
+                    HeaderCell { text: appController.language === "en" ? "Reads" : "阅读"; column: 5 }
+                    HeaderCell { text: appController.language === "en" ? "Likes" : "点赞"; column: 6 }
+                    HeaderCell { text: appController.language === "en" ? "Avg" : "均读"; column: 7 }
+                    HeaderCell { text: appController.language === "en" ? "Fans" : "粉丝"; column: 8 }
+                }
+                Repeater { model: root.hotRows
+                    DataRow { rowIndex: index; rowText: modelData }
                 }
             }
         }
     }
 
-    component HeaderCell: Rectangle { property string text: ""; property int w: 120; width: w; height: 44; color: card2; border.color: line; Label { anchors.centerIn: parent; width: parent.width - 12; text: parent.text; color: textMain; font.bold: true; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight } }
-    component Cell: Rectangle { property string text: ""; property int w: 120; property bool selected: false; property bool alt: false; width: w; height: 40; color: selected ? rowSel : (alt ? rowAlt : fieldBg); border.color: line; Label { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 8; width: parent.width - 16; text: parent.text; color: textMain; elide: Text.ElideRight } }
-    component DataRow: Rectangle { property int rowIndex: 0; property string rowText: ""; width: 1562; height: 40; color: "transparent"; Row { anchors.fill: parent; Cell { text: String(rowIndex + 1); w: 52; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 0); w: 340; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 1); w: 170; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 2); w: 130; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 3); w: 90; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 4); w: 110; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 5); w: 110; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 6); w: 110; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 7); w: 110; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } Cell { text: root.hotCell(rowText, 8); w: 340; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 } } MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.selectedHotRow = rowIndex; setDetail(appController.language === "en" ? "Hot result" : "爆文结果", rowText) } } }
+    component HeaderCell: Rectangle {
+        property string text: ""
+        property int column: 0
+        width: root.hotWidths[column]
+        height: 44
+        color: card2
+        border.color: line
+        Label { anchors.centerIn: parent; width: parent.width - 18; text: parent.text; color: textMain; font.bold: true; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
+        Rectangle { anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 5; color: dragger.containsMouse ? accent : "transparent" }
+        MouseArea {
+            id: dragger
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 14
+            hoverEnabled: true
+            cursorShape: Qt.SizeHorCursor
+            property real lastX: 0
+            onPressed: lastX = mouse.x
+            onPositionChanged: if (pressed) root.resizeHotColumn(column, mouse.x - lastX)
+            ToolTip.visible: containsMouse
+            ToolTip.text: appController.language === "en" ? "Drag to resize column" : "拖动调整列宽"
+        }
+    }
+    component Cell: Rectangle {
+        property string text: ""
+        property int column: 0
+        property bool selected: false
+        property bool alt: false
+        property int align: Text.AlignLeft
+        width: root.hotWidths[column]
+        height: 42
+        color: selected ? rowSel : (alt ? rowAlt : fieldBg)
+        border.color: line
+        Label { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 8; anchors.right: parent.right; anchors.rightMargin: 8; text: parent.text; color: textMain; horizontalAlignment: parent.align; elide: Text.ElideRight }
+    }
+    component DataRow: Rectangle {
+        property int rowIndex: 0
+        property string rowText: ""
+        width: root.hotTableWidth()
+        height: 42
+        color: "transparent"
+        Row { anchors.fill: parent
+            Cell { text: String(rowIndex + 1); column: 0; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignHCenter }
+            Cell { text: root.hotDisplayCell(rowText, 0); column: 1; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 }
+            Cell { text: root.hotDisplayCell(rowText, 1); column: 2; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 }
+            Cell { text: root.hotDisplayCell(rowText, 2); column: 3; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignHCenter }
+            Cell { text: root.hotDisplayCell(rowText, 3); column: 4; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
+            Cell { text: root.hotDisplayCell(rowText, 4); column: 5; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
+            Cell { text: root.hotDisplayCell(rowText, 5); column: 6; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
+            Cell { text: root.hotDisplayCell(rowText, 6); column: 7; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
+            Cell { text: root.hotDisplayCell(rowText, 7); column: 8; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
+        }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.selectedHotRow = rowIndex; setDetail(appController.language === "en" ? "Hot result" : "爆文结果", root.hotRowDetail(rowText)) } }
+    }
+
+    component DetailPanel: Rectangle {
+        id: detailPanel
+        property string text: ""
+        color: fieldBg
+        radius: 12
+        border.color: line
+        clip: true
+        Flickable {
+            id: rowDetailFlick
+            anchors.fill: parent
+            anchors.margins: 12
+            clip: true
+            contentWidth: width
+            contentHeight: rowDetailText.height
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            Text {
+                id: rowDetailText
+                width: rowDetailFlick.width
+                text: detailPanel.text
+                color: textMain
+                wrapMode: Text.WordWrap
+                textFormat: Text.PlainText
+                font.pixelSize: 14
+            }
+        }
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.IBeamCursor; ToolTip.visible: containsMouse; ToolTip.text: appController.language === "en" ? "Selected row details" : "选中行详情" }
+    }
 
     component SimpleTextPage: PageFrame {
         property string titleText: ""
@@ -619,7 +793,7 @@ ApplicationWindow {
     component PluginPage: PageFrame {
         pageTitle: root.t("plugins_title")
         pageGuide: root.guide("plugins")
-        Card { cardHeight: 150; cardTitle: appController.language === "en" ? "Plugin actions" : "插件操作"; cardSubtitle: appController.language === "en" ? "Separated controls" : "操作区单独分组"
+        Card { cardHeight: 150; cardTitle: appController.language === "en" ? "Plugin actions" : "插件操作"; cardSubtitle: appController.language === "en" ? "Refresh and review available capabilities." : "刷新并查看当前可用能力。"
             RowLayout { anchors.fill: parent; anchors.margins: 16; spacing: 10
                 AppButton { text: appController.language === "en" ? "Refresh" : "刷新"; ToolTip.visible: hovered; ToolTip.text: "刷新插件"; onClicked: root.pluginRows = appController.pluginRows() }
                 AppButton { text: appController.language === "en" ? "Analysis" : "插件分析"; ToolTip.visible: hovered; ToolTip.text: "运行分析"; onClicked: pluginReport.text = appController.pluginAnalysis() }
@@ -635,7 +809,7 @@ ApplicationWindow {
                 }
             }
         }
-        Card { cardHeight: 360; cardTitle: appController.language === "en" ? "Plugin report" : "插件报告"; cardSubtitle: appController.language === "en" ? "Readonly result" : "只读结果"
+        Card { cardHeight: 360; cardTitle: appController.language === "en" ? "Plugin report" : "插件报告"; cardSubtitle: appController.language === "en" ? "Capability analysis output" : "能力分析结果"
             DetailBox { id: pluginReport; text: appController.pluginAnalysis() }
         }
     }
@@ -643,7 +817,7 @@ ApplicationWindow {
     component SettingsPage: PageFrame {
         pageTitle: root.t("settings_title")
         pageGuide: root.guide("settings")
-        Card { cardHeight: 440; cardTitle: appController.language === "en" ? "Collection task" : "采集任务"; cardSubtitle: appController.language === "en" ? "All controls have labels" : "所有控件都有说明"
+        Card { cardHeight: 440; cardTitle: appController.language === "en" ? "Collection task" : "采集任务"; cardSubtitle: appController.language === "en" ? "Create a reusable collection task." : "创建可重复运行的采集任务。"
             ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 14
                 GridLayout { Layout.fillWidth: true; columns: root.width > 1240 ? 2 : 1; columnSpacing: 18; rowSpacing: 14
                     FormText { id: taskName; label: appController.language === "en" ? "Task name" : "任务名称"; hint: appController.language === "en" ? "Saved with the task" : "随任务保存"; text: appController.language === "en" ? "AI hot article monitor" : "AI 爆文监控" }
@@ -706,7 +880,7 @@ ApplicationWindow {
                 }
             }
         }
-        Card { cardHeight: 200; cardTitle: appController.language === "en" ? "Selected endpoint" : "选中接口"; cardSubtitle: appController.language === "en" ? "Readonly receipt" : "只读回执"
+        Card { cardHeight: 200; cardTitle: appController.language === "en" ? "Selected endpoint" : "选中接口"; cardSubtitle: appController.language === "en" ? "Selection and run receipt" : "选择结果与运行回执"
             DetailBox { id: endpointReceipt; text: root.selectedEndpointRow === "" ? root.guide("api_browser") : (appController.language === "en" ? "Selected path: " : "已选路径：") + appController.endpointPathFromRow(root.selectedEndpointRow) }
         }
     }
@@ -728,7 +902,7 @@ ApplicationWindow {
                 }
             }
         }
-        Card { cardHeight: 200; cardTitle: appController.language === "en" ? "Run receipt" : "运行回执"; cardSubtitle: appController.language === "en" ? "Readonly result" : "只读结果"
+        Card { cardHeight: 200; cardTitle: appController.language === "en" ? "Run receipt" : "运行回执"; cardSubtitle: appController.language === "en" ? "Selected run details" : "选中记录详情"
             DetailBox { id: runReceipt; text: root.guide("runs") }
         }
     }
