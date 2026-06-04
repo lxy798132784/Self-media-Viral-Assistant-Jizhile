@@ -1,42 +1,38 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import re, sys
+import re
 qml = Path('ui/Main.qml').read_text(encoding='utf-8')
 problems = []
 required = {
-    'FieldControl component for explicit labels before inputs': 'component FieldControl',
-    'DateControl component for date interaction': 'component DateControl',
-    'ExportDialog component for user-selected path/format': 'component ExportDialog',
-    'export dialog path field': 'id: exportPath',
-    'hot results independent navigation item': 'hot_results_title',
-    'hot results stack page': 'id: hotResultsPage',
-    'Excel-like table component': 'component DataGrid',
-    'table header row': 'component TableHeaderCell',
-    'table data cell': 'component DataCell',
-    'horizontal table scrolling': 'ScrollBar.horizontal',
-    'vertical table scrolling': 'ScrollBar.vertical',
-    'export dialog opened from results': 'exportDialog.openForHotResults',
-    'no hard-coded /tmp hot result export': 'NO_LITERAL_TMP_HOT_EXPORT',
+    'semantic text input wrapper': 'component FormText',
+    'semantic combo wrapper': 'component FormCombo',
+    'semantic spin wrapper': 'component FormSpin',
+    'date picker wrapper': 'component DateField',
+    'export dialog': 'component ExportDialog',
+    'separate result page': 'component ResultPage',
+    'excel table grid': 'component DataGrid',
+    'table header cell': 'component HeaderCell',
+    'table data cell': 'component Cell',
+    'fixed-height card layout': 'property int cardHeight',
+    'scrollable page frame': 'ScrollView { Layout.fillWidth: true; Layout.fillHeight: true',
+    'no synchronous full self-check on dashboard': '完整诊断请运行 run-with-log.bat 或 --self-test',
 }
-for label, needle in required.items():
-    if needle == 'NO_LITERAL_TMP_HOT_EXPORT':
-        if '/tmp/media-hit-hot-results.' in qml:
-            problems.append('hot result export still hard-codes /tmp paths')
-    elif needle not in qml:
-        problems.append(f'missing {label}: {needle}')
-# Each original hot parameter input should be inside explicit FieldControl/DateControl, not naked TextField-only UX.
-for qid in ['hotKey', 'hotKeyword', 'hotPubType', 'hotCategory', 'hotPage', 'hotStart', 'hotEnd']:
-    if f'id: {qid}' not in qml:
-        problems.append(f'missing control id {qid}')
-# Prevent cramped old result list in the collection page.
-if 'id: hotResultList' in qml:
-    problems.append('old inline hotResultList remains; results must live on independent table page')
-# Guard against common overlap-prone fixed tiny result table heights.
-if 'id: hotResultList' in qml or 'Layout.preferredHeight: 110; clip: true; model: appController.hotTypicalResultRows' in qml:
-    problems.append('old cramped inline hot result table remains')
+for name, needle in required.items():
+    if needle not in qml:
+        problems.append(f'missing {name}: {needle}')
+for forbidden in ['FieldControl', 'DateControl', 'delegate: RowCard', 'runFullSelfCheck(".")', 'runTaskRow(modelData)', '/tmp/media-hit-hot-results']:
+    if forbidden in qml:
+        problems.append(f'forbidden unstable/legacy pattern remains: {forbidden}')
+# All main API params must have labels and semantic controls.
+for label in ['key', 'keyword', 'pub_type', 'category', 'page', 'start_time', 'end_time']:
+    if f'label: "{label}"' not in qml:
+        problems.append(f'missing explicit parameter label: {label}')
+# Guard against accidental border property-group name collision.
+if 'property color border:' in qml or 'property color border2:' in qml:
+    problems.append('do not name color properties border/border2; it collides with Rectangle.border')
 if problems:
     print('UX audit failed:')
     for p in problems:
         print('-', p)
-    sys.exit(1)
-print('OK: polished UX audit passed')
+    raise SystemExit(1)
+print('OK: polished stable UX audit passed')

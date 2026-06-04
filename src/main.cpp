@@ -46,8 +46,11 @@ int main(int argc, char* argv[]) {
   AppController controller;
   controller.initialize();
   const bool qmlSmoke = args.contains("--qml-smoke");
-  if (args.contains("--screenshot") || qmlSmoke) {
+  const bool screenshotMode = args.contains("--screenshot") || args.contains("--screenshot-page");
+  if (screenshotMode || qmlSmoke) {
     controller.loadMockArticles();
+    controller.runHotTypicalCollection(QString(), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("0"), 1,
+                                       QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
   }
 
   QQmlApplicationEngine engine;
@@ -59,12 +62,19 @@ int main(int argc, char* argv[]) {
                    }, Qt::QueuedConnection);
   engine.load(url);
 
-  if (args.contains("--screenshot")) {
-    const int idx = args.indexOf("--screenshot");
-    const QString output = idx + 1 < args.size()
-                               ? args.at(idx + 1)
-                               : QDir::temp().filePath("media-hit-assistant-screenshot.png");
-    QTimer::singleShot(1200, &app, [&app, &engine, output]() {
+  if (screenshotMode) {
+    const bool pageShot = args.contains("--screenshot-page");
+    const int idx = pageShot ? args.indexOf("--screenshot-page") : args.indexOf("--screenshot");
+    const int pageIndex = pageShot && idx + 1 < args.size() ? args.at(idx + 1).toInt() : -1;
+    const QString output = pageShot
+                               ? (idx + 2 < args.size() ? args.at(idx + 2) : QDir::temp().filePath("media-hit-assistant-page.png"))
+                               : (idx + 1 < args.size() ? args.at(idx + 1) : QDir::temp().filePath("media-hit-assistant-screenshot.png"));
+    QTimer::singleShot(1400, &app, [&app, &engine, output, pageIndex]() {
+      QObject* rootObject = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().first();
+      if (rootObject && pageIndex >= 0) {
+        rootObject->setProperty("currentPageIndex", pageIndex);
+      }
+      QTimer::singleShot(500, &app, [&app, &engine, output]() {
       QObject* rootObject = engine.rootObjects().isEmpty() ? nullptr : engine.rootObjects().first();
       auto* window = qobject_cast<QQuickWindow*>(rootObject);
       auto* item = qobject_cast<QQuickItem*>(rootObject);
@@ -81,6 +91,7 @@ int main(int argc, char* argv[]) {
         return;
       }
       QCoreApplication::exit(0);
+      });
     });
   } else if (qmlSmoke) {
     QTimer::singleShot(1200, &app, [&app, &engine]() {

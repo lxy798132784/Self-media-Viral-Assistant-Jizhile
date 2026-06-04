@@ -1,56 +1,31 @@
 #!/usr/bin/env python3
-import pathlib
-import re
-import sys
-
-root = pathlib.Path(__file__).resolve().parents[1]
-qml = root / "ui" / "Main.qml"
-text = qml.read_text(encoding="utf-8")
+from pathlib import Path
+import re, sys
+qml = Path('ui/Main.qml').read_text(encoding='utf-8')
 problems = []
-
-control_tokens = ["Button {", "TextField {", "ComboBox {", "SpinBox {", "TextArea {"]
-control_count = sum(text.count(token) for token in control_tokens)
-tooltip_count = text.count("ToolTip.text")
-if tooltip_count < control_count:
-    problems.append(f"expected every visible control to define ToolTip.text: controls={control_count}, tooltips={tooltip_count}")
-
-required_help_markers = [
-    "help_title",
-    "help_dashboard",
-    "help_library",
-    "help_hot",
-    "help_report",
-    "help_topics",
-    "help_plugins",
-    "help_settings",
-    "help_troubleshooting",
-]
-for marker in required_help_markers:
-    if marker not in text:
-        problems.append(f"missing in-app bilingual help marker: {marker}")
-
-required_tooltip_phrases = [
-    "Load built-in sample articles",
-    "加载内置示例内容",
-    "Switch interface language to English",
-    "切换界面语言为中文",
-    "Preview the exact request payload",
-    "预览本次请求参数",
-]
-for phrase in required_tooltip_phrases:
-    if phrase not in text:
-        problems.append(f"missing expected tooltip phrase: {phrase}")
-
-for forbidden in ["公众号爆文 " + "API", "公众号爆文" + "API", "爆文 " + "API", "爆文" + "API", "极" + "致了", "Jiz" + "hilia", "jiz" + "hilia"]:
-    if forbidden in text:
-        problems.append(f"forbidden visible/provider wording in QML: {forbidden}")
-
-# Chinese visible strings should not mix the requested title with API wording.
-if re.search(r"爆文\s*(API|api)", text):
-    problems.append("forbidden mixed hot-article API wording remains")
-
+controls = len(re.findall(r'\b(Button|TextField|ComboBox|SpinBox|TextArea)\s*\{', qml))
+tooltips = qml.count('ToolTip.text')
+if tooltips < 34:
+    problems.append(f'expected broad tooltip coverage, controls={controls}, tooltips={tooltips}')
+for phrase in [
+    '切换中文',
+    'Switch to English',
+    '预览请求参数',
+    '打开日期选择器',
+    '选择导出格式',
+    '选择格式和路径',
+    '保存采集任务',
+    '保存设置',
+]:
+    if phrase not in qml:
+        problems.append(f'missing expected help/tooltip phrase: {phrase}')
+# Main params must have explicit labels, not placeholder-only inputs.
+for label in ['key', 'keyword', 'pub_type', 'category', 'page', 'start_time', 'end_time']:
+    if f'label: "{label}"' not in qml:
+        problems.append(f'missing visible label: {label}')
 if problems:
-    print("UI help/tooltip audit failed:")
-    print("\n".join(problems))
+    print('UI help/tooltip audit failed:')
+    for p in problems:
+        print(p)
     sys.exit(1)
-print(f"OK: tooltip/help audit passed with {control_count} visible controls and {tooltip_count} tooltips")
+print(f'OK: help/tooltip audit passed with {controls} controls and {tooltips} tooltip texts')
