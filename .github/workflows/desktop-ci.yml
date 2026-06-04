@@ -12,7 +12,7 @@ jobs:
       - name: Install Qt dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build g++ qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-tools-dev-tools libxkbcommon-dev
+          sudo apt-get install -y cmake ninja-build g++ python3 qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-tools-dev-tools libxkbcommon-dev qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build
@@ -23,3 +23,17 @@ jobs:
         run: QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
       - name: QML control audit
         run: python3 scripts/audit_qml_controls.py
+      - name: DevPrompt alignment audit
+        run: python3 scripts/audit_devprompt_alignment.py
+      - name: Package smoke
+        run: ./scripts/package-linux.sh
+      - name: Install smoke
+        run: |
+          cmake --install build --prefix /tmp/media-hit-install
+          test -x /tmp/media-hit-install/bin/media-hit-assistant
+          test -s /tmp/media-hit-install/share/applications/com.mediahit.Assistant.desktop
+          test -s /tmp/media-hit-install/share/metainfo/com.mediahit.Assistant.metainfo.xml
+          test -s /tmp/media-hit-install/share/icons/hicolor/scalable/apps/com.mediahit.Assistant.svg
+          test -s /tmp/media-hit-install/share/doc/MediaHitAssistant/README.md
+          test -s /tmp/media-hit-install/share/doc/MediaHitAssistant/docs/PLUGIN_GUIDE.md
+          test -s /tmp/media-hit-install/share/media-hit-assistant/plugins/README.md

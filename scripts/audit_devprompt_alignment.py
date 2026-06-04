@@ -24,6 +24,7 @@ combined = "\n".join(read(p) for p in [
     "include/plugin_interfaces.h",
     "ui/Main.qml",
     "Dockerfile",
+    "CMakeLists.txt",
     ".github/workflows/desktop-ci.yml",
 ])
 required_terms = {
@@ -50,6 +51,8 @@ required_terms = {
     "Fallback": r"fallback|Fallback|回退",
     "plugin guide": r"Plugin guide|插件指南",
     "open-source governance": r"MIT License|Contributing|Security Policy|Code of Conduct|Changelog|贡献指南|安全策略|行为准则|更新日志",
+    "install docs and plugins": r"CMAKE_INSTALL_DOCDIR|media-hit-assistant/plugins|PLUGIN_GUIDE",
+    "CI full gate": r"Package smoke|Install smoke|audit_devprompt_alignment|package-linux",
     "English docs": r"Build|Architecture|Developer|Examples",
     "Chinese docs": r"构建|架构|开发|示例",
 }

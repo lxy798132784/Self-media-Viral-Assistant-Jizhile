@@ -135,12 +135,19 @@ Configurable fields:
 cmake --install build --prefix /tmp/media-hit-install
 ```
 
+The install target includes the executable, Linux desktop metadata, icon, README, changelog, docs, and plugin drop-in directory.
+
+安装目标包含可执行文件、Linux 桌面元数据、图标、README、更新日志、docs 文档和插件投放目录。
+
 Installed files:
 
 - `bin/media-hit-assistant`
 - `share/applications/com.mediahit.Assistant.desktop`
 - `share/metainfo/com.mediahit.Assistant.metainfo.xml`
 - `share/icons/hicolor/scalable/apps/com.mediahit.Assistant.svg`
+- `share/doc/MediaHitAssistant/README.md`
+- `share/doc/MediaHitAssistant/docs/PLUGIN_GUIDE.md`
+- `share/media-hit-assistant/plugins/README.md`
 
 ### Windows
 
