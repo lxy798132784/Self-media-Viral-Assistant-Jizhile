@@ -37,7 +37,7 @@ Copy-Item plugins\* (Join-Path $DistDir "plugins") -Recurse -Force
 Copy-Item vendor\jizhilia-api-knowledge\api-index.json (Join-Path $DistDir "vendor\jizhilia-api-knowledge\api-index.json") -Force
 
 if (Get-Command windeployqt -ErrorAction SilentlyContinue) {
-  windeployqt --qmldir resources\qml (Join-Path $DistDir "media-hit-assistant.exe")
+  windeployqt (Join-Path $DistDir "media-hit-assistant.exe")
 } else {
   Write-Warning "windeployqt not found; package may require Qt runtime on PATH"
 }
