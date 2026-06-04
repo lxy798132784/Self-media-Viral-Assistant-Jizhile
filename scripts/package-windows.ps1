@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 cmake -S . -B $BuildDir -DCMAKE_BUILD_TYPE=$Config
 cmake --build $BuildDir --config $Config --parallel 2
-ctest --test-dir $BuildDir --output-on-failure
+ctest --test-dir $BuildDir -C $Config --output-on-failure
 
 $exe = Join-Path $BuildDir "media-hit-assistant.exe"
 if (!(Test-Path $exe)) {
