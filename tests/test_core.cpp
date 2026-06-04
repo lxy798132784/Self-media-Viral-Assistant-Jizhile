@@ -31,7 +31,8 @@ class CoreTest : public QObject {
 
 void CoreTest::apiCatalogLoadsLocalIndex() {
   ApiCatalog catalog;
-  const auto endpoints = catalog.loadFromFile("/home/pi/dev/jizhilia-api-knowledge/api-index.json");
+  QVERIFY(QFile::exists(catalog.defaultIndexPath()));
+  const auto endpoints = catalog.loadDefault();
   QVERIFY(endpoints.size() >= 48);
   QVERIFY(catalog.categories(endpoints).contains(QStringLiteral("公众号文章内容和互动数据等")));
 }
@@ -274,7 +275,7 @@ void CoreTest::appControllerExposesDatePickersAndAiExtensionSlot() {
 
 void CoreTest::appControllerExposesEndpointAndPluginRows() {
   ApiCatalog catalog;
-  const auto endpoints = catalog.loadFromFile("/home/pi/dev/jizhilia-api-knowledge/api-index.json");
+  const auto endpoints = catalog.loadDefault();
   const auto mp = catalog.findByCategory(endpoints, QStringLiteral("公众号"));
   QVERIFY(!mp.isEmpty());
   QVERIFY(catalog.findByPath(endpoints, mp.first().path).path == mp.first().path);

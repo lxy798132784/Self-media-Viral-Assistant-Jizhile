@@ -1,26 +1,20 @@
-# Plugin Guide / 插件指南
+# Plugin Guide
 
-Media Hit Assistant exposes CTK-style extension points for providers, exporters, and analyzers. The first release uses a built-in registry so the desktop app remains portable across Linux, Windows, and Docker without shipping platform-specific dynamic libraries.
+Media Hit Assistant exposes CTK-style extension points for providers, exporters, and analyzers. The current release uses a built-in registry so the desktop app remains portable across Linux, Windows, and Docker without shipping platform-specific dynamic libraries.
 
-自媒体爆款助手提供 CTK 风格的 Provider、Exporter、Analyzer 扩展点。首版使用内置注册表，避免在 Linux、Windows、Docker 之间分发平台相关动态库。
+## Current extension points
 
-## Current extension points / 当前扩展点
-
-| Extension point / 扩展点 | Purpose / 用途 | Current built-ins / 当前内置项 |
+| Extension point | Purpose | Current built-ins |
 |---|---|---|
-| Provider | Content source integration / 内容源接入 | `provider:jizhilia` |
-| Exporter | Output format generation / 输出格式生成 | `exporter:markdown`, `exporter:xml` |
-| Analyzer | Report and scoring logic / 报告与评分逻辑 | `analyzer:hit-score` |
+| Provider | Content source integration. | `provider:jizhilia` |
+| Exporter | Output format generation. | `exporter:markdown`, `exporter:xml` |
+| Analyzer | Report and scoring logic. | `analyzer:hit-score` |
 
-## Dynamic loading path / 动态加载路径
+## Dynamic metadata scan
 
-`BuiltinPluginRegistry::dynamicPluginHints()` documents the intended `plugins/` directory contract. A future CTK runtime loader can scan this directory and register dynamic libraries into the same QML-facing registry.
+The registry can inspect plugin metadata folders and report invalid entries without loading executable code. This makes the current plugin surface safe and testable while preserving a future runtime loader path.
 
-`BuiltinPluginRegistry::dynamicPluginHints()` 记录了预期的 `plugins/` 目录契约。后续真实 CTK runtime loader 可扫描该目录，并把动态库注册到同一个面向 QML 的 registry。
-
-Recommended future layout:
-
-建议后续目录：
+Recommended layout:
 
 ```text
 plugins/
@@ -29,12 +23,19 @@ plugins/
   analyzers/
 ```
 
-## Stability contract / 稳定性契约
+Metadata files should describe an `id`, `name`, and `kind`. Invalid metadata is reported as blocked and must not break built-in plugins.
 
-- Keep QML calls stable: `pluginRows()` and `pluginAnalysis()` should not change.
-- Keep provider/exporter/analyzer IDs stable once documented.
-- Dynamic plugins must fail closed: if a plugin fails to load, the built-in registry should still work.
+## Stability contract
 
-- 保持 QML 调用稳定：`pluginRows()` 和 `pluginAnalysis()` 不应随意变化。
-- Provider、Exporter、Analyzer 的 ID 一旦文档化，应保持稳定。
-- 动态插件必须 fail closed：插件加载失败时，内置注册表仍应可用。
+- Keep QML calls stable: `pluginRows()`, `pluginDetail()`, `pluginExportPreview()`, `pluginScanReport()`, and `pluginAnalysis()`.
+- Keep documented provider, exporter, and analyzer IDs stable.
+- Dynamic plugins must fail closed.
+- Runtime `.so` and `.dll` loading is a future item, not a current release claim.
+
+## Adding a built-in analyzer
+
+1. Add the analyzer ID to `BuiltinPluginRegistry`.
+2. Implement the report text using article data only.
+3. Add a QtTest assertion for the generated analysis.
+4. Expose descriptor text through `pluginDescriptor()`.
+5. Run `./scripts/verify-all.sh`.

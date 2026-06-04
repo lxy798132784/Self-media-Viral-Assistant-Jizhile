@@ -19,6 +19,8 @@ struct ApiEndpoint {
  */
 class ApiCatalog {
  public:
+  QString defaultIndexPath() const;
+  QVector<ApiEndpoint> loadDefault() const;
   QVector<ApiEndpoint> loadFromFile(const QString& path) const;
   QStringList categories(const QVector<ApiEndpoint>& endpoints) const;
   QVector<ApiEndpoint> findByCategory(const QVector<ApiEndpoint>& endpoints, const QString& keyword) const;

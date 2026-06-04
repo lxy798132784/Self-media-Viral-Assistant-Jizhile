@@ -300,7 +300,7 @@ int AppController::runHotTypicalCollection(const QString& apiKey, const QString&
 
 QStringList AppController::apiEndpointRows(const QString& categoryKeyword) const {
   QStringList rows;
-  const auto endpoints = api_catalog_.loadFromFile(QStringLiteral("/home/pi/dev/jizhilia-api-knowledge/api-index.json"));
+  const auto endpoints = api_catalog_.loadDefault();
   const auto filtered = api_catalog_.findByCategory(endpoints, categoryKeyword);
   for (const auto& e : filtered) {
     rows << QStringLiteral("%1｜%2｜%3").arg(e.category, e.title, e.path);

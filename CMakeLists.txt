@@ -26,6 +26,7 @@ qt_add_executable(media-hit-assistant
 )
 
 target_include_directories(media-hit-assistant PRIVATE include)
+target_compile_definitions(media-hit-assistant PRIVATE MEDIA_HIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_link_libraries(media-hit-assistant PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Network)
 
 include(CTest)
@@ -47,8 +48,9 @@ add_executable(unit_tests
     src/plugin_interfaces.cpp
 )
 target_include_directories(unit_tests PRIVATE include)
+target_compile_definitions(unit_tests PRIVATE MEDIA_HIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_link_libraries(unit_tests PRIVATE Qt6::Core Qt6::Sql Qt6::Network Qt6::Test)
-add_test(NAME unit_tests COMMAND unit_tests)
+add_test(NAME unit_tests COMMAND unit_tests WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 include(GNUInstallDirs)
 install(TARGETS media-hit-assistant RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -58,3 +60,4 @@ install(FILES packaging/com.mediahit.Assistant.svg DESTINATION ${CMAKE_INSTALL_D
 install(FILES README.md LICENSE CHANGELOG.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/docs)
 install(DIRECTORY plugins/ DESTINATION ${CMAKE_INSTALL_DATADIR}/media-hit-assistant/plugins)
+install(FILES vendor/jizhilia-api-knowledge/api-index.json DESTINATION ${CMAKE_INSTALL_DATADIR}/media-hit-assistant/vendor)

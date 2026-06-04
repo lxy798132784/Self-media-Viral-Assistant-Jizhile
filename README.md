@@ -1,8 +1,7 @@
-# Media Hit Assistant / 自媒体爆款助手
+# Media Hit Assistant
 
 <p align="center">
-  <strong>A local-first desktop workspace for collecting, reviewing, analyzing, and exporting public-account hit articles.</strong><br />
-  <strong>一个本地优先的桌面工作台：采集公众号爆款文章，沉淀内容库，生成拆解报告和选题推荐，并导出 Markdown / XML。</strong>
+  <strong>A local-first desktop workspace for collecting, analyzing, and exporting public-account hit articles.</strong>
 </p>
 
 <p align="center">
@@ -13,66 +12,55 @@
   <img alt="Platforms" src="https://img.shields.io/badge/Linux%20%7C%20Windows%20%7C%20Docker-ready-7A4DFF">
 </p>
 
----
+## Languages
 
-## Why this project exists / 为什么做这个项目
+- English: this README and the `docs/*.md` files.
+- Chinese: [`docs/README.zh-CN.md`](docs/README.zh-CN.md) and `docs/zh-CN/*.md`.
 
-Most creator tools stop at either scraping or note-taking. **Media Hit Assistant** connects the whole loop:
+## Why this project exists
 
-多数自媒体工具要么只采集，要么只做笔记。**自媒体爆款助手**把完整流程串起来：
+Content teams often split their workflow across scraping tools, spreadsheets, note apps, and report templates. Media Hit Assistant connects the loop in one local desktop application:
 
-1. **Collect / 采集** — collect public-account articles through configurable Jizhilia endpoints or safe local samples.
-2. **Store / 沉淀** — keep articles, tasks, and run history in SQLite.
-3. **Analyze / 拆解** — calculate hit scores and produce structured observations.
-4. **Recommend / 选题** — turn high-performing content patterns into topic ideas.
-5. **Export / 交付** — export Markdown and XML artifacts for downstream workflows.
+1. collect public-account articles by keyword or API endpoint;
+2. store articles, collection tasks, and run history in SQLite;
+3. inspect hit signals such as reads, likes, and derived score;
+4. convert strong article patterns into topic ideas;
+5. export Markdown and XML artifacts for downstream workflows.
 
-The app is built as a **C++20 + Qt6 + QML desktop application** with a CTK-style plugin surface, so provider APIs, exporters, and analyzers can evolve independently.
+The project is built as a C++20, Qt6, and QML desktop application with a CTK-style plugin surface. Provider APIs, exporters, and analyzers can evolve independently while the user workflow remains stable.
 
-该项目是 **C++20 + Qt6 + QML 桌面应用**，并预留 CTK 风格插件扩展面，后续 Provider、Exporter、Analyzer 可以独立演进。
-
----
-
-## Highlights / 功能亮点
-
-| Area / 模块 | What it does / 能力 |
-|---|---|
-| Dashboard / 仪表盘 | Collection entry point, content statistics, full workflow self-check / 快速采集、统计概览、全流程自检 |
-| Content Library / 内容库 | SQLite-backed article library with refresh and export actions / SQLite 内容库，支持刷新和导出 |
-| API Catalog / 接口库 | Browse local Jizhilia API index, filter by category, collect by endpoint path / 浏览本地极致了 API 索引，按分类筛选，按 endpoint 采集 |
-| Hot Articles API / 公众号爆文 API | Dedicated Apifox endpoint page with editable controls for `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, and `end_time` / 面向指定 Apifox 接口的专页，所有请求参数都有可编辑控件 |
-| Language Switch / 语言切换 | UI switches between Chinese and English instead of showing mixed bilingual labels / 软件界面可在中文和英文之间切换，不把两种语言混在同一个控件里 |
-| Analysis Report / 拆解报告 | Hit score, read/like metrics, structured observations / 爆款评分、阅读点赞指标、结构化观察 |
-| Topic Recommendation / 选题推荐 | Generate topic ideas from high-performing article patterns / 从高表现内容模式生成选题 |
-| Plugins / 插件 | CTK-style Provider / Exporter / Analyzer registry / CTK 风格 Provider、Exporter、Analyzer 注册表 |
-| Settings / 设置 | API key, verify code, endpoint path, frequency, run count, QPS, export directory, run history / API 参数、采集频率次数、QPS、导出目录、运行历史 |
-
----
-
-## Screenshots / 界面预览
+## Preview
 
 <p align="center">
   <img alt="Dashboard preview" src="docs/assets/dashboard-preview.svg">
 </p>
 
-The preview above shows the intended desktop workflow: collect, analyze, export, and extend through plugins.
+## Highlights
 
-上方预览图展示桌面端主流程：采集、分析、导出，并通过插件扩展。
+| Area | Outcome |
+|---|---|
+| Dashboard | Quick collection, statistics, and full workflow self-test. |
+| Content Library | SQLite-backed article list with detail inspection and Markdown/XML export. |
+| API Catalog | Browse the bundled Jizhilia endpoint index, filter by category, and run collection by endpoint path. |
+| Hot Articles API | Dedicated page for `/fbmain/monitor/v3/hot_typical_search`; every documented parameter has an editable control. |
+| Language Switch | The app UI can switch between Chinese and English instead of mixing languages in one label. |
+| Analysis Report | Generate hit scores, read/like summaries, and structured observations. |
+| Topic Recommendations | Convert high-performing content patterns into next-topic ideas. |
+| Plugins | CTK-style Provider, Exporter, and Analyzer registry with fail-closed dynamic-plugin scanning. |
+| Settings | API key, verify code, endpoint path, interval, run count, QPS, export directory, tasks, and run history. |
 
----
+## Quick start
 
-## Quick start / 快速开始
-
-### 1. Install dependencies / 安装依赖
-
-Ubuntu 24.04 example:
+### Dependencies on Ubuntu 24.04
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y cmake g++ python3   qt6-base-dev qt6-declarative-dev qt6-tools-dev   qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
+sudo apt-get install -y cmake g++ python3 \
+  qt6-base-dev qt6-declarative-dev qt6-tools-dev \
+  qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
 ```
 
-### 2. Build and test / 构建与测试
+### Build and test
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -80,7 +68,7 @@ cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
 
-### 3. Run the desktop app / 启动桌面端
+### Run
 
 ```bash
 ./build/media-hit-assistant
@@ -92,199 +80,162 @@ Headless self-test:
 QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
 ```
 
-### 4. Run the full verification gate / 运行全量门禁
+### Full verification gate
 
 ```bash
 ./scripts/verify-all.sh
 ```
 
-This checks build, CTest, self-test export artifacts, QML control coverage, DevPrompt alignment, and offscreen launch.
+The gate runs the build, CTest suite, offscreen self-test, export-artifact checks, QML control audit, documentation alignment audit, and offscreen launch smoke.
 
-该脚本检查构建、CTest、自检导出、QML 控件覆盖、DevPrompt 对齐和 offscreen 启动。
+## Configuration
 
----
-
-## Configuration / 配置
-
-Credentials are never required for local self-test. If no API key is configured, the app uses safe sample collection so the whole workflow remains testable without spending API quota.
-
-本地自检不需要凭据。未配置 API Key 时，应用会使用安全示例采集，不消耗接口额度，也能完整验证采集、分析、导出链路。
+Local tests do not require credentials. If no API key is configured, the app uses safe sample collection so the workflow remains testable without spending API quota.
 
 Configurable fields:
 
-可配置项：
+- Jizhilia API key;
+- verify code;
+- endpoint path;
+- Hot Articles API parameters: `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, `end_time`;
+- UI language;
+- collection interval;
+- maximum run count;
+- QPS limit;
+- export directory.
 
-- Jizhilia API key / 极致了 API Key
-- Verify code / 验证码
-- Endpoint path / 接口路径
-- Hot article API parameters: `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, `end_time` / 公众号爆文 API 参数：`key`、`keyword`、`pub_type`、`category`、`page`、`start_time`、`end_time`
-- UI language: Chinese or English / 界面语言：中文或英文
-- Collection interval / 采集频率
-- Max run count / 采集次数
-- QPS limit / QPS 限速
-- Export directory / 导出目录
+Do not commit real credentials. Keep secrets in local settings or environment variables only.
 
-> Do not commit real credentials. Keep secrets in local settings or environment variables only.
->
-> 不要提交真实凭据。密钥只能留在本机设置或环境变量中。
+## Architecture
 
----
+```text
+QML UI
+  -> AppController (Q_INVOKABLE facade)
+      -> ConfigManager       local API and task settings
+      -> ApiCatalog          bundled Jizhilia endpoint index
+      -> JizhiliaClient      payloads, HTTP, parsing, retry/fallback
+      -> DatabaseManager     SQLite articles, tasks, run history
+      -> ExportService       Markdown and XML artifacts
+      -> BuiltinPluginRegistry
+           -> Provider       source integration point
+           -> Exporter       export format extension point
+           -> Analyzer       hit-score and future analysis plugins
+```
 
-## Packaging / 打包
+Design principles:
 
-### Linux
+- local-first persistence and offline self-test;
+- safe-by-default fallback when credentials are missing;
+- plugin-ready extension boundaries;
+- verifiable controls through tests and audits;
+- cross-platform source delivery for Linux, Windows, Docker, x86_64, and ARM64 Qt builds.
+
+## Packaging
+
+Linux:
 
 ```bash
 ./scripts/package-linux.sh
 cmake --install build --prefix /tmp/media-hit-install
 ```
 
-The install target includes the executable, Linux desktop metadata, icon, README, changelog, docs, and plugin drop-in directory.
-
-安装目标包含可执行文件、Linux 桌面元数据、图标、README、更新日志、docs 文档和插件投放目录。
-
-Installed files:
-
-- `bin/media-hit-assistant`
-- `share/applications/com.mediahit.Assistant.desktop`
-- `share/metainfo/com.mediahit.Assistant.metainfo.xml`
-- `share/icons/hicolor/scalable/apps/com.mediahit.Assistant.svg`
-- `share/doc/MediaHitAssistant/README.md`
-- `share/doc/MediaHitAssistant/docs/PLUGIN_GUIDE.md`
-- `share/media-hit-assistant/plugins/README.md`
-
-### Windows
+Windows:
 
 ```powershell
 .\scripts\package-windows.ps1
 ```
 
-### Docker
+Docker:
 
 ```bash
 docker build -t media-hit-assistant .
 docker run --rm media-hit-assistant
 ```
 
----
+The install target includes the executable, desktop metadata, icon, README, changelog, docs, bundled API index, and plugin drop-in directory.
 
-## Architecture / 架构
-
-```text
-QML UI
-  └─ AppController (Q_INVOKABLE facade)
-      ├─ ConfigManager       local API and task settings
-      ├─ ApiCatalog          local Jizhilia endpoint index
-      ├─ JizhiliaClient      payloads, HTTP, parsing, retry/fallback
-      ├─ DatabaseManager     SQLite articles, tasks, run history
-      ├─ ExportService       Markdown / XML artifacts
-      └─ BuiltinPluginRegistry
-           ├─ Provider       source integration point
-           ├─ Exporter       export format extension point
-           └─ Analyzer       hit-score and future analysis plugins
-```
-
-Design principles:
-
-设计原则：
-
-- **Local-first / 本地优先** — SQLite persistence and offline self-test.
-- **Safe by default / 默认安全** — sample fallback when credentials are missing.
-- **Plugin-ready / 插件可扩展** — CTK-style interfaces for providers, exporters, analyzers.
-- **Verifiable / 可验证** — every visible QML button is checked by an audit script.
-- **Cross-platform / 跨平台** — Linux, Windows, Docker, and architecture-neutral Qt builds.
-
----
-
-## Repository layout / 仓库结构
+## Repository layout
 
 ```text
-include/        C++ public headers / C++ 头文件
-src/            C++ implementation / C++ 实现
-ui/             QML desktop interface / QML 桌面界面
-tests/          QtTest unit tests / QtTest 单元测试
-scripts/        build, package, audit scripts / 构建、打包、审计脚本
-packaging/      desktop entry, AppStream metadata, icon / 桌面入口、元数据、图标
-docs/           user, developer, architecture docs / 用户、开发、架构文档
-vendor/         sanitized local Jizhilia API knowledge / 已脱敏本地极致了 API 知识库
+include/        C++ public headers
+src/            C++ implementation
+ui/             QML desktop interface
+tests/          QtTest unit tests
+scripts/        build, package, and audit scripts
+packaging/      desktop entry, AppStream metadata, and icon
+docs/           English docs, Chinese docs, and assets
+vendor/         sanitized bundled Jizhilia API knowledge
+plugins/        plugin drop-in contract and metadata examples
 ```
 
----
+## Documentation
 
-## Documentation / 文档
+English:
 
-- [Project specification / 项目规格](docs/PROJECT-SPEC.md)
-- [Architecture / 架构说明](docs/ARCHITECTURE.md)
-- [Developer guide / 开发文档](docs/DEVELOPMENT.md)
-- [Examples / 使用示例](docs/EXAMPLES.md)
-- [Plugin guide / 插件指南](docs/PLUGIN_GUIDE.md)
-- [Chinese overview / 中文说明](docs/README.zh-CN.md)
-- [Contributing / 贡献指南](CONTRIBUTING.md)
-- [Security / 安全策略](SECURITY.md)
-- [Changelog / 更新日志](CHANGELOG.md)
-- [Release notes template / 发布说明模板](.github/RELEASE_NOTES.md)
-- [Dependabot config / 依赖更新配置](.github/dependabot.yml)
+- [Project specification](docs/PROJECT-SPEC.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Developer guide](docs/DEVELOPMENT.md)
+- [Examples](docs/EXAMPLES.md)
+- [Plugin guide](docs/PLUGIN_GUIDE.md)
 
----
+Chinese:
 
-## Quality gates / 质量门禁
+- [Chinese overview](docs/README.zh-CN.md)
+- [Chinese project specification](docs/zh-CN/PROJECT-SPEC.md)
+- [Chinese architecture](docs/zh-CN/ARCHITECTURE.md)
+- [Chinese developer guide](docs/zh-CN/DEVELOPMENT.md)
+- [Chinese examples](docs/zh-CN/EXAMPLES.md)
+- [Chinese plugin guide](docs/zh-CN/PLUGIN_GUIDE.md)
 
-| Gate / 门禁 | Command / 命令 |
+Governance:
+
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Release notes template](.github/RELEASE_NOTES.md)
+- [Dependabot config](.github/dependabot.yml)
+
+## Quality gates
+
+| Gate | Command |
 |---|---|
-| Build / 构建 | `cmake --build build -j2` |
-| Unit tests / 单元测试 | `ctest --test-dir build --output-on-failure` |
-| Self-test / 自检 | `QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test` |
-| QML controls / QML 控件 | `python3 scripts/audit_qml_controls.py` |
-| DevPrompt alignment / 需求对齐 | `python3 scripts/audit_devprompt_alignment.py` |
-| Full verification / 全量验证 | `./scripts/verify-all.sh` |
+| Build | `cmake --build build -j2` |
+| Unit tests | `ctest --test-dir build --output-on-failure` |
+| Self-test | `QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test` |
+| QML controls | `python3 scripts/audit_qml_controls.py` |
+| Documentation alignment | `python3 scripts/audit_devprompt_alignment.py` |
+| Full verification | `./scripts/verify-all.sh` |
+| Package smoke | `./scripts/package-linux.sh` |
+| Install smoke | `cmake --install build --prefix /tmp/media-hit-install` |
 
----
+## Roadmap
 
-## Roadmap / 路线图
+- [x] SQLite content library, collection tasks, and run history.
+- [x] Markdown and XML export.
+- [x] Bundled API catalog and endpoint collection.
+- [x] Interactive details for articles, endpoints, plugins, tasks, and run receipts.
+- [x] CTK-style plugin registry and documented plugin drop-in contract.
+- [x] Linux, Windows, and Docker delivery scripts.
+- [x] Open-source governance files.
+- [x] Separate English and Chinese documentation sets.
+- [ ] Runtime dynamic CTK library loading.
+- [ ] Signed installers.
+- [ ] Additional analyzers for title patterns, structure templates, and topic clusters.
 
-- [x] SQLite content library, task table, run history / SQLite 内容库、任务表、运行历史
-- [x] Markdown and XML export / Markdown 与 XML 导出
-- [x] API catalog and endpoint collection / API 目录与 endpoint 采集
-- [x] CTK-style plugin registry and documented plugin drop-in contract / CTK 风格插件注册表与插件投放契约文档
-- [x] Linux, Windows, Docker delivery scripts / Linux、Windows、Docker 交付脚本
-- [x] Open-source governance files: license, contributing, security, code of conduct, issue and PR templates / 开源治理文件：许可证、贡献指南、安全策略、行为准则、issue 与 PR 模板
-- [x] Release preview asset / 发布预览资源
-- [ ] Runtime dynamic CTK library loading / 运行时动态 CTK 库加载
-- [ ] Signed installers / 签名安装包
-- [ ] More analyzers: title patterns, structure templates, topic clusters / 更多分析器：标题模式、结构模板、选题聚类
-
----
-
-## Security / 安全
+## Security
 
 - No secrets are required for local tests.
-- Real API keys must stay outside Git.
+- Missing credentials trigger safe sample collection.
 - Vendor API examples are sanitized.
-- Build outputs, runtime databases, and generated packages are ignored.
+- Runtime artifacts, SQLite databases, build outputs, and package outputs are excluded from source delivery.
 
-- 本地测试不需要密钥。
-- 真实 API Key 不进入 Git。
-- vendor API 示例已脱敏。
-- build、运行数据库、打包产物均被忽略。
+See [SECURITY.md](SECURITY.md) for the reporting policy.
 
----
+## Contributing
 
-## Contributing / 贡献
+Read [CONTRIBUTING.md](CONTRIBUTING.md), run `./scripts/verify-all.sh`, and keep user-facing documentation updated when behavior changes.
 
-1. Write or update tests first.
-2. Run `./scripts/verify-all.sh`.
-3. Keep user-facing docs bilingual when the change affects behavior.
-4. Never commit credentials, runtime databases, build outputs, or generated packages.
+## License
 
-1. 先写或更新测试。
-2. 运行 `./scripts/verify-all.sh`。
-3. 行为变化时同步更新中英文用户文档。
-4. 不提交密钥、运行数据库、build 产物或打包产物。
-
----
-
-## License / 许可证
-
-This repository is licensed under the [MIT License](LICENSE).
-
-本仓库使用 [MIT License](LICENSE) 许可证。
+MIT. See [LICENSE](LICENSE).

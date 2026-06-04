@@ -1,14 +1,40 @@
 #include "api_catalog.h"
+#include <QCoreApplication>
+#include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSet>
 
+QString ApiCatalog::defaultIndexPath() const {
+  const QString rel = QStringLiteral("vendor/jizhilia-api-knowledge/api-index.json");
+  const QStringList candidates = {
+      QDir::current().filePath(rel),
+#ifdef MEDIA_HIT_SOURCE_DIR
+      QDir(QStringLiteral(MEDIA_HIT_SOURCE_DIR)).filePath(rel),
+#endif
+      QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../share/media-hit-assistant/vendor/api-index.json")),
+      QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../share/doc/MediaHitAssistant/vendor/jizhilia-api-knowledge/api-index.json")),
+  };
+  for (const auto& candidate : candidates) {
+    if (QFile::exists(candidate)) return QDir::cleanPath(candidate);
+  }
+  return QDir::cleanPath(QDir::current().filePath(rel));
+}
+
+QVector<ApiEndpoint> ApiCatalog::loadDefault() const {
+  return loadFromFile(defaultIndexPath());
+}
+
 QVector<ApiEndpoint> ApiCatalog::loadFromFile(const QString& path) const {
-  QFile file(path);
+  const QString requested = path.trimmed().isEmpty() ? defaultIndexPath() : path;
+  QFile file(requested);
   QVector<ApiEndpoint> endpoints;
-  if (!file.open(QIODevice::ReadOnly)) return endpoints;
+  if (!file.open(QIODevice::ReadOnly)) {
+    file.setFileName(defaultIndexPath());
+    if (!file.open(QIODevice::ReadOnly)) return endpoints;
+  }
   const auto doc = QJsonDocument::fromJson(file.readAll());
   if (!doc.isArray()) return endpoints;
   for (const auto& value : doc.array()) {
