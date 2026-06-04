@@ -49,7 +49,8 @@ QString AppController::trText(const QString& key) const {
   if (key == QStringLiteral("subtitle")) return en ? QStringLiteral("Official account content intelligence workspace") : QStringLiteral("公众号内容情报工作台");
   if (key == QStringLiteral("dashboard_title")) return en ? QStringLiteral("Dashboard") : QStringLiteral("仪表盘");
   if (key == QStringLiteral("library_title")) return en ? QStringLiteral("Content Library") : QStringLiteral("内容库");
-  if (key == QStringLiteral("hot_api_title")) return en ? QStringLiteral("Hot Articles") : QStringLiteral("爆文");
+  if (key == QStringLiteral("hot_api_title")) return en ? QStringLiteral("Hot Collection") : QStringLiteral("爆文采集");
+  if (key == QStringLiteral("hot_results_title")) return en ? QStringLiteral("Parsed Results") : QStringLiteral("解析结果表");
   if (key == QStringLiteral("report_title")) return en ? QStringLiteral("Analysis Report") : QStringLiteral("拆解报告");
   if (key == QStringLiteral("topics_title")) return en ? QStringLiteral("Topic Recommendations") : QStringLiteral("选题推荐");
   if (key == QStringLiteral("plugins_title")) return en ? QStringLiteral("Plugins") : QStringLiteral("插件");
