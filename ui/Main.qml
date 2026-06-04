@@ -38,6 +38,10 @@ ApplicationWindow {
     property var libraryRows: appController.articleRows("")
     property var pluginRows: appController.pluginRows()
     property var taskRows: appController.taskRows()
+    property var endpointRows: appController.apiEndpointRows("")
+    property string selectedEndpointRow: ""
+    property string selectedTaskRow: ""
+    property var runRows: appController.runRows()
     property alias currentPageIndex: stack.currentIndex
 
     function t(key) { appController.language; return appController.trText(key) }
@@ -66,6 +70,8 @@ ApplicationWindow {
             report: "报告页展示可导出的内容拆解结果。",
             topics: "选题推荐以卡片列表展示，点击可查看后续处理输入预览。",
             plugins: "插件页展示内置能力，分析区和列表分区显示，避免文字压到控件下方。",
+            api_browser: "接口浏览器列出极致了全部可用接口，可按分类筛选、选中一行后用当前关键词直接采集。先在列表里选接口，再点运行，避免误触发付费请求。",
+            runs: "运行历史记录每次采集的时间、状态、新增条数和返回信息。点任意一行可查看该次运行回执。",
             settings: "设置页用分组表单，所有输入都有 label 和说明。"
         }
         var en = {
@@ -76,6 +82,8 @@ ApplicationWindow {
             report: "The report page shows exportable content analysis.",
             topics: "Topic ideas are displayed as cards. Click one to preview the next-step input.",
             plugins: "The plugin page separates capability lists and analysis text to avoid text under controls.",
+            api_browser: "The API browser lists every available Jizhile endpoint. Filter by category, select a row, then collect with the current keyword. Select first, then run, to avoid accidental paid requests.",
+            runs: "Run history records the time, status, inserted count, and message of each collection. Click any row to see that run receipt.",
             settings: "Settings use grouped forms; every input has a label and help text."
         }
         return appController.language === "en" ? en[key] : zh[key]
@@ -136,6 +144,8 @@ ApplicationWindow {
                 NavButton { label: root.t("report_title"); index: 4 }
                 NavButton { label: root.t("topics_title"); index: 5 }
                 NavButton { label: root.t("plugins_title"); index: 6 }
+                NavButton { label: root.t("api_browser_title"); index: 8 }
+                NavButton { label: root.t("runs_title"); index: 9 }
                 NavButton { label: root.t("settings_title"); index: 7 }
                 Item { Layout.fillHeight: true }
                 Label { text: appController.status; color: accent; font.pixelSize: 12; wrapMode: Text.WordWrap; Layout.fillWidth: true }
@@ -233,6 +243,8 @@ ApplicationWindow {
             ListPage { titleText: root.t("topics_title"); guideText: root.guide("topics"); rows: appController.recommendTopics() }
             PluginPage { }
             SettingsPage { }
+            ApiBrowserPage { }
+            RunHistoryPage { }
         }
     }
 
@@ -642,11 +654,17 @@ ApplicationWindow {
                 RowLayout { Layout.fillWidth: true; AppButton { text: appController.language === "en" ? "Save task" : "保存任务"; ToolTip.visible: hovered; ToolTip.text: "保存采集任务"; onClicked: { appController.createCollectionTask(taskName.text, taskKeyword.text, taskInterval.value, taskRuns.value); root.taskRows = appController.taskRows() } } AppButton { text: root.t("collect_now"); ToolTip.visible: hovered; ToolTip.text: "立即采集"; onClicked: appController.runCollection(taskKeyword.text) } }
             }
         }
-        Card { cardHeight: 280; cardTitle: appController.language === "en" ? "Saved tasks" : "已保存任务"; cardSubtitle: appController.language === "en" ? "Independent scroll list" : "独立滚动列表"
-            ScrollView { anchors.fill: parent; anchors.margins: 16; clip: true
-                Column { width: parent.width; spacing: 8
-                    Repeater { model: root.taskRows
-                        RowCard { rowText: modelData; onPicked: { root.detailText = appController.taskDetail(modelData); setDetail(appController.language === "en" ? "Task" : "任务", modelData) } }
+        Card { cardHeight: 340; cardTitle: appController.language === "en" ? "Saved tasks" : "已保存任务"; cardSubtitle: appController.language === "en" ? "Select a task, then run it" : "选中一条任务后即可运行"
+            ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 12
+                RowLayout { Layout.fillWidth: true; spacing: 10
+                    AppButton { text: appController.language === "en" ? "Refresh" : "刷新"; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Reload saved tasks" : "重新加载已保存任务"; onClicked: root.taskRows = appController.taskRows() }
+                    AppButton { text: root.t("run_task"); highlighted: true; enabled: root.selectedTaskRow !== ""; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Run the selected saved task" : "运行选中的已保存任务"; onClicked: { var n = appController.runTaskRow(root.selectedTaskRow); root.detailText = appController.taskDetail(root.selectedTaskRow) + "\n\n" + (appController.language === "en" ? "Inserted rows: " : "新增条数：") + n + "\n" + appController.status; setDetail(root.t("run_task"), root.selectedTaskRow) } }
+                }
+                ScrollView { Layout.fillWidth: true; Layout.fillHeight: true; clip: true
+                    Column { width: parent.width; spacing: 8
+                        Repeater { model: root.taskRows
+                            RowCard { rowText: modelData; color: root.selectedTaskRow === modelData ? rowSel : card2; onPicked: { root.selectedTaskRow = modelData; root.detailText = appController.taskDetail(modelData); setDetail(appController.language === "en" ? "Task" : "任务", modelData) } }
+                        }
                     }
                 }
             }
@@ -661,6 +679,57 @@ ApplicationWindow {
                 }
                 AppButton { text: appController.language === "en" ? "Save settings" : "保存设置"; ToolTip.visible: hovered; ToolTip.text: "保存设置"; onClicked: appController.saveSettings(apiKey.text, verify.text, defaultInterval.value, taskRuns.value, Number(qps.text)) }
             }
+        }
+    }
+
+    component ApiBrowserPage: PageFrame {
+        pageTitle: root.t("api_browser_title")
+        pageGuide: root.guide("api_browser")
+        Card { cardHeight: 230; cardTitle: appController.language === "en" ? "Filter and run" : "筛选与运行"; cardSubtitle: appController.language === "en" ? "Select an endpoint first, then run with the keyword" : "先在下方列表选中接口，再用关键词运行"
+            ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 12
+                GridLayout { Layout.fillWidth: true; columns: root.width > 1240 ? 2 : 1; columnSpacing: 18; rowSpacing: 14
+                    FormText { id: endpointFilter; label: appController.language === "en" ? "Category filter" : "分类筛选"; hint: appController.language === "en" ? "Blank lists all endpoints" : "留空列出全部接口" }
+                    FormText { id: endpointKeyword; label: appController.language === "en" ? "Keyword" : "关键词"; hint: appController.language === "en" ? "Used by the collection call" : "采集调用使用"; text: "AI" }
+                }
+                RowLayout { Layout.fillWidth: true; spacing: 10
+                    AppButton { text: appController.language === "en" ? "Filter" : "筛选"; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Refresh endpoint list" : "刷新接口列表"; onClicked: root.endpointRows = appController.apiEndpointRows(endpointFilter.text) }
+                    AppButton { text: root.t("run_endpoint"); highlighted: true; enabled: root.selectedEndpointRow !== ""; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Run the selected endpoint" : "运行已选中的接口"; onClicked: { var n = appController.runEndpointRow(root.selectedEndpointRow, endpointKeyword.text); endpointReceipt.text = (appController.language === "en" ? "Endpoint: " : "接口：") + appController.endpointPathFromRow(root.selectedEndpointRow) + "\n" + (appController.language === "en" ? "Inserted rows: " : "新增条数：") + n + "\n" + appController.status; setDetail(root.t("run_endpoint"), root.selectedEndpointRow) } }
+                }
+            }
+        }
+        Card { cardHeight: 320; cardTitle: appController.language === "en" ? "Endpoints" : "接口列表"; cardSubtitle: appController.language === "en" ? "Click a row to select it" : "点击一行进行选中"
+            ScrollView { anchors.fill: parent; anchors.margins: 16; clip: true
+                Column { width: parent.width; spacing: 8
+                    Repeater { model: root.endpointRows
+                        RowCard { rowText: modelData; color: root.selectedEndpointRow === modelData ? rowSel : card2; onPicked: { root.selectedEndpointRow = modelData; endpointReceipt.text = (appController.language === "en" ? "Selected path: " : "已选路径：") + appController.endpointPathFromRow(modelData); setDetail(appController.language === "en" ? "Endpoint" : "接口", modelData) } }
+                    }
+                }
+            }
+        }
+        Card { cardHeight: 200; cardTitle: appController.language === "en" ? "Selected endpoint" : "选中接口"; cardSubtitle: appController.language === "en" ? "Readonly receipt" : "只读回执"
+            DetailBox { id: endpointReceipt; text: root.selectedEndpointRow === "" ? root.guide("api_browser") : (appController.language === "en" ? "Selected path: " : "已选路径：") + appController.endpointPathFromRow(root.selectedEndpointRow) }
+        }
+    }
+
+    component RunHistoryPage: PageFrame {
+        pageTitle: root.t("runs_title")
+        pageGuide: root.guide("runs")
+        Card { cardHeight: 120; cardTitle: appController.language === "en" ? "Actions" : "操作"; cardSubtitle: appController.language === "en" ? "Refresh the latest runs" : "刷新最近的运行记录"
+            RowLayout { anchors.fill: parent; anchors.margins: 16; spacing: 10
+                AppButton { text: root.t("refresh_runs"); highlighted: true; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Reload run history" : "重新加载运行历史"; onClicked: root.runRows = appController.runRows() }
+            }
+        }
+        Card { cardHeight: 360; cardTitle: appController.language === "en" ? "Run records" : "运行记录"; cardSubtitle: appController.language === "en" ? "Click a row for the receipt" : "点击一行查看回执"
+            ScrollView { anchors.fill: parent; anchors.margins: 16; clip: true
+                Column { width: parent.width; spacing: 8
+                    Repeater { model: root.runRows
+                        RowCard { rowText: modelData; onPicked: { runReceipt.text = appController.runDetail(modelData); setDetail(appController.language === "en" ? "Run" : "运行", modelData) } }
+                    }
+                }
+            }
+        }
+        Card { cardHeight: 200; cardTitle: appController.language === "en" ? "Run receipt" : "运行回执"; cardSubtitle: appController.language === "en" ? "Readonly result" : "只读结果"
+            DetailBox { id: runReceipt; text: root.guide("runs") }
         }
     }
 }
