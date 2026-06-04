@@ -29,6 +29,8 @@ Configure API / 配置 API
 | Dashboard / 仪表盘 | Statistics, quick collection, full workflow self-check / 统计、快速采集、全流程自检 |
 | Content Library / 内容库 | Article list, refresh, Markdown/XML export / 文章列表、刷新、Markdown/XML 导出 |
 | API Catalog / 接口库 | Local Jizhilia API index, category filter, endpoint collection / 本地极致了 API 索引、分类筛选、endpoint 采集 |
+| Hot Articles API / 公众号爆文 API | Dedicated `/fbmain/monitor/v3/hot_typical_search` page; every documented parameter has an editable control / 独立的 `/fbmain/monitor/v3/hot_typical_search` 页面；文档内每个参数都有可编辑控件 |
+| Language Switch / 语言切换 | UI can switch Chinese/English without mixing both languages in one label / 界面可中英文切换，不在一个标签里混杂两种语言 |
 | Analysis Report / 拆解报告 | Reads, likes, hit score, structured summary / 阅读、点赞、爆款评分、结构化摘要 |
 | Topic Recommendation / 选题推荐 | Topic ideas from high-performing articles / 从高表现文章生成选题 |
 | Plugins / 插件 | Provider, Exporter, Analyzer registry / Provider、Exporter、Analyzer 注册表 |
@@ -61,6 +63,8 @@ The user can configure:
 - API key / API Key
 - Verify code / 验证码
 - Endpoint path / 接口路径
+- Hot article API parameters: `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, `end_time` / 公众号爆文 API 参数：`key`、`keyword`、`pub_type`、`category`、`page`、`start_time`、`end_time`
+- UI language / 界面语言
 - Collection interval / 采集频率
 - Maximum run count / 最大采集次数
 - QPS limit / QPS 限速

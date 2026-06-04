@@ -17,16 +17,20 @@
 class AppController : public QObject {
   Q_OBJECT
   Q_PROPERTY(QString status READ status NOTIFY statusChanged)
+  Q_PROPERTY(QString language READ language NOTIFY languageChanged)
   Q_PROPERTY(int articleCount READ articleCount NOTIFY dataChanged)
   Q_PROPERTY(int totalReads READ totalReads NOTIFY dataChanged)
   Q_PROPERTY(int totalLikes READ totalLikes NOTIFY dataChanged)
  public:
   explicit AppController(QObject* parent = nullptr);
   QString status() const;
+  QString language() const;
   int articleCount() const;
   int totalReads() const;
   int totalLikes() const;
   Q_INVOKABLE bool initialize();
+  Q_INVOKABLE void setLanguage(const QString& language);
+  Q_INVOKABLE QString trText(const QString& key) const;
   Q_INVOKABLE void loadMockArticles();
   Q_INVOKABLE QStringList articleRows(const QString& keyword = QString()) const;
   Q_INVOKABLE QString generateReport() const;
@@ -38,6 +42,13 @@ class AppController : public QObject {
   Q_INVOKABLE int runMockCollection(const QString& keyword);
   Q_INVOKABLE int runCollection(const QString& keyword);
   Q_INVOKABLE int runEndpointCollection(const QString& endpointPath, const QString& keyword);
+  Q_INVOKABLE QStringList hotTypicalParameterRows() const;
+  Q_INVOKABLE QString hotTypicalPayloadPreview(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                               const QString& category, int page, const QString& startTime,
+                                               const QString& endTime) const;
+  Q_INVOKABLE int runHotTypicalCollection(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                          const QString& category, int page, const QString& startTime,
+                                          const QString& endTime);
   Q_INVOKABLE QStringList apiEndpointRows(const QString& categoryKeyword = QString()) const;
   Q_INVOKABLE QStringList pluginRows() const;
   Q_INVOKABLE QString pluginAnalysis() const;
@@ -47,9 +58,11 @@ class AppController : public QObject {
   Q_INVOKABLE bool runFullSelfCheck(const QString& exportDir);
  signals:
   void statusChanged();
+  void languageChanged();
   void dataChanged();
  private:
   void setStatus(const QString& status);
+  QString language_ = "zh";
   QString status_ = "Ready";
   ConfigManager config_;
   DatabaseManager database_;

@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QUrlQuery>
 #include <QTimer>
 
 JizhiliaClient::JizhiliaClient(QObject* parent) : QObject(parent) {}
@@ -25,6 +26,23 @@ QJsonObject JizhiliaClient::buildGenericPayload(const QString& keyword, int page
   payload["query"] = keyword;
   payload["pageSize"] = 20;
   return payload;
+}
+QJsonObject JizhiliaClient::buildHotTypicalSearchPayload(const QString& api_key, const QString& keyword, const QString& pub_type,
+                                                         const QString& category, int page, const QString& start_time,
+                                                         const QString& end_time) const {
+  QJsonObject payload;
+  payload["key"] = api_key;
+  payload["keyword"] = keyword;
+  payload["pub_type"] = pub_type.trimmed().isEmpty() ? QStringLiteral("0") : pub_type.trimmed();
+  payload["category"] = category.trimmed().isEmpty() ? QStringLiteral("0") : category.trimmed();
+  payload["page"] = QString::number(qMax(1, page));
+  payload["start_time"] = start_time;
+  payload["end_time"] = end_time;
+  return payload;
+}
+QStringList JizhiliaClient::hotTypicalParameterNames() const {
+  return {QStringLiteral("key"), QStringLiteral("keyword"), QStringLiteral("pub_type"), QStringLiteral("category"),
+          QStringLiteral("page"), QStringLiteral("start_time"), QStringLiteral("end_time")};
 }
 QVector<Article> JizhiliaClient::mockSearchArticles(const QString& keyword, int page) const {
   QVector<Article> rows;
@@ -123,6 +141,26 @@ QVector<Article> JizhiliaClient::callEndpointBlocking(const QString& base_url, c
   }
   return mockEndpointArticles(endpoint_path, keyword, page);
 }
+QVector<Article> JizhiliaClient::callHotTypicalSearchBlocking(const QString& base_url, const QString& api_key, const QString& keyword,
+                                                              const QString& pub_type, const QString& category, int page,
+                                                              const QString& start_time, const QString& end_time,
+                                                              QString* error_message) const {
+  const QString endpoint = QStringLiteral("/fbmain/monitor/v3/hot_typical_search");
+  if (!isConfigured(api_key)) {
+    if (error_message) *error_message = QStringLiteral("API Key empty, using hot typical mock fallback");
+    return mockEndpointArticles(endpoint, keyword, page);
+  }
+  const QString root = base_url.trimmed().isEmpty() ? QStringLiteral("https://api.jizhilia.com") : base_url.trimmed();
+  const QString url = root + endpoint;
+  const auto payload = buildHotTypicalSearchPayload(api_key, keyword, pub_type, category, page, start_time, end_time);
+  for (int attempt = 1; attempt <= 3; ++attempt) {
+    const QByteArray body = postMultipartBlocking(url, payload, error_message);
+    const auto rows = parseArticlesFromJson(body, keyword);
+    if (!rows.isEmpty()) return rows;
+    QEventLoop loop; QTimer::singleShot(retryDelayMs(attempt), &loop, &QEventLoop::quit); loop.exec();
+  }
+  return mockEndpointArticles(endpoint, keyword, page);
+}
 bool JizhiliaClient::isRetryableStatus(int status_code) const { return status_code == -1 || status_code == 500 || status_code == 103 || status_code == 104 || status_code == 50000; }
 int JizhiliaClient::retryDelayMs(int attempt) const { const int safe_attempt = qBound(1, attempt, 5); return 1000 * (1 << (safe_attempt - 1)); }
 bool JizhiliaClient::isConfigured(const QString& api_key) const { return !api_key.trimmed().isEmpty(); }
@@ -131,6 +169,28 @@ QByteArray JizhiliaClient::postJsonBlocking(const QString& url, const QJsonObjec
   QNetworkRequest request{QUrl(url)};
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
   QNetworkReply* reply = manager.post(request, QJsonDocument(payload).toJson(QJsonDocument::Compact));
+  QEventLoop loop;
+  QTimer timer; timer.setSingleShot(true);
+  QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+  QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+  timer.start(15000);
+  loop.exec();
+  if (timer.isActive()) timer.stop(); else { reply->abort(); if (error_message) *error_message = QStringLiteral("request timeout"); reply->deleteLater(); return {}; }
+  const QByteArray data = reply->readAll();
+  if (reply->error() != QNetworkReply::NoError && error_message) *error_message = reply->errorString();
+  reply->deleteLater();
+  return data;
+}
+
+QByteArray JizhiliaClient::postMultipartBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const {
+  QNetworkAccessManager manager;
+  QNetworkRequest request{QUrl(url)};
+  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+  QUrlQuery form;
+  for (auto it = payload.begin(); it != payload.end(); ++it) {
+    form.addQueryItem(it.key(), it.value().toVariant().toString());
+  }
+  QNetworkReply* reply = manager.post(request, form.query(QUrl::FullyEncoded).toUtf8());
   QEventLoop loop;
   QTimer timer; timer.setSingleShot(true);
   QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);

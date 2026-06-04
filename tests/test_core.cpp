@@ -16,6 +16,8 @@ class CoreTest : public QObject {
   void databaseStoresCollectionTasks();
   void exportServiceCreatesMarkdownAndXml();
   void clientBuildsSearchPayload();
+  void clientBuildsHotTypicalPayload();
+  void appControllerSupportsLanguageAndHotTypicalApi();
   void pluginRegistryExposesBuiltins();
   void appControllerExposesEndpointAndPluginRows();
 };
@@ -116,6 +118,41 @@ void CoreTest::clientBuildsSearchPayload() {
   QCOMPARE(parsed.first().readCount, 1000);
   QVERIFY(client.isRetryableStatus(500));
   QVERIFY(client.retryDelayMs(3) >= 4000);
+}
+
+void CoreTest::clientBuildsHotTypicalPayload() {
+  JizhiliaClient client;
+  const auto payload = client.buildHotTypicalSearchPayload(
+      QStringLiteral("key-1"), QStringLiteral("AI"), QStringLiteral("5"), QStringLiteral("7"), 2,
+      QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
+  QCOMPARE(payload.value("key").toString(), QStringLiteral("key-1"));
+  QCOMPARE(payload.value("keyword").toString(), QStringLiteral("AI"));
+  QCOMPARE(payload.value("pub_type").toString(), QStringLiteral("5"));
+  QCOMPARE(payload.value("category").toString(), QStringLiteral("7"));
+  QCOMPARE(payload.value("page").toString(), QStringLiteral("2"));
+  QCOMPARE(payload.value("start_time").toString(), QStringLiteral("2026-05-15"));
+  QCOMPARE(payload.value("end_time").toString(), QStringLiteral("2026-05-17"));
+  QVERIFY(client.hotTypicalParameterNames().contains(QStringLiteral("pub_type")));
+  QVERIFY(client.hotTypicalParameterNames().contains(QStringLiteral("end_time")));
+}
+
+void CoreTest::appControllerSupportsLanguageAndHotTypicalApi() {
+  AppController controller;
+  QVERIFY(controller.initialize());
+  QCOMPARE(controller.language(), QStringLiteral("zh"));
+  controller.setLanguage(QStringLiteral("en"));
+  QCOMPARE(controller.language(), QStringLiteral("en"));
+  QVERIFY(controller.trText(QStringLiteral("dashboard_title")).contains(QStringLiteral("Dashboard")));
+  controller.setLanguage(QStringLiteral("zh"));
+  QVERIFY(controller.trText(QStringLiteral("dashboard_title")).contains(QStringLiteral("仪表盘")));
+  QVERIFY(controller.hotTypicalParameterRows().join("\n").contains(QStringLiteral("pub_type")));
+  QVERIFY(controller.hotTypicalParameterRows().join("\n").contains(QStringLiteral("start_time")));
+  const QString preview = controller.hotTypicalPayloadPreview(
+      QStringLiteral("key-1"), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("7"), 1,
+      QStringLiteral("2026-05-15"), QStringLiteral("2026-05-17"));
+  QVERIFY(preview.contains(QStringLiteral("hot_typical_search")));
+  QVERIFY(preview.contains(QStringLiteral("\"category\": \"7\"")));
+  QVERIFY(preview.contains(QStringLiteral("\"end_time\": \"2026-05-17\"")));
 }
 
 void CoreTest::pluginRegistryExposesBuiltins() {

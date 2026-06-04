@@ -55,6 +55,8 @@ required_terms = {
     "CI full gate": r"Package smoke|Install smoke|audit_devprompt_alignment|package-linux",
     "English docs": r"Build|Architecture|Developer|Examples",
     "Chinese docs": r"构建|架构|开发|示例",
+    "language switch": r"setLanguage|中文|English|language",
+    "hot typical API": r"hot_typical_search|pub_type|category|start_time|end_time",
 }
 missing = [name for name, pattern in required_terms.items() if not re.search(pattern, combined, re.I)]
 if missing:

@@ -40,6 +40,8 @@ The app is built as a **C++20 + Qt6 + QML desktop application** with a CTK-style
 | Dashboard / 仪表盘 | Collection entry point, content statistics, full workflow self-check / 快速采集、统计概览、全流程自检 |
 | Content Library / 内容库 | SQLite-backed article library with refresh and export actions / SQLite 内容库，支持刷新和导出 |
 | API Catalog / 接口库 | Browse local Jizhilia API index, filter by category, collect by endpoint path / 浏览本地极致了 API 索引，按分类筛选，按 endpoint 采集 |
+| Hot Articles API / 公众号爆文 API | Dedicated Apifox endpoint page with editable controls for `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, and `end_time` / 面向指定 Apifox 接口的专页，所有请求参数都有可编辑控件 |
+| Language Switch / 语言切换 | UI switches between Chinese and English instead of showing mixed bilingual labels / 软件界面可在中文和英文之间切换，不把两种语言混在同一个控件里 |
 | Analysis Report / 拆解报告 | Hit score, read/like metrics, structured observations / 爆款评分、阅读点赞指标、结构化观察 |
 | Topic Recommendation / 选题推荐 | Generate topic ideas from high-performing article patterns / 从高表现内容模式生成选题 |
 | Plugins / 插件 | CTK-style Provider / Exporter / Analyzer registry / CTK 风格 Provider、Exporter、Analyzer 注册表 |
@@ -115,6 +117,8 @@ Configurable fields:
 - Jizhilia API key / 极致了 API Key
 - Verify code / 验证码
 - Endpoint path / 接口路径
+- Hot article API parameters: `key`, `keyword`, `pub_type`, `category`, `page`, `start_time`, `end_time` / 公众号爆文 API 参数：`key`、`keyword`、`pub_type`、`category`、`page`、`start_time`、`end_time`
+- UI language: Chinese or English / 界面语言：中文或英文
 - Collection interval / 采集频率
 - Max run count / 采集次数
 - QPS limit / QPS 限速

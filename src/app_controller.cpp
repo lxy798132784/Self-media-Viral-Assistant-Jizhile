@@ -2,12 +2,15 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStandardPaths>
 #include <QThread>
 
 AppController::AppController(QObject* parent) : QObject(parent) {}
 
 QString AppController::status() const { return status_; }
+QString AppController::language() const { return language_; }
 int AppController::articleCount() const { return database_.articleCount(); }
 int AppController::totalReads() const { return database_.totalReads(); }
 int AppController::totalLikes() const { return database_.totalLikes(); }
@@ -30,6 +33,32 @@ bool AppController::initialize() {
   setStatus(QStringLiteral("已就绪 / Ready"));
   emit dataChanged();
   return true;
+}
+
+void AppController::setLanguage(const QString& language) {
+  const QString normalized = language.toLower().startsWith(QStringLiteral("en")) ? QStringLiteral("en") : QStringLiteral("zh");
+  if (language_ == normalized) return;
+  language_ = normalized;
+  emit languageChanged();
+}
+
+QString AppController::trText(const QString& key) const {
+  const bool en = language_ == QStringLiteral("en");
+  if (key == QStringLiteral("app_title")) return en ? QStringLiteral("Media Hit Assistant") : QStringLiteral("自媒体爆款助手");
+  if (key == QStringLiteral("subtitle")) return en ? QStringLiteral("Official account content intelligence workspace") : QStringLiteral("公众号内容情报工作台");
+  if (key == QStringLiteral("dashboard_title")) return en ? QStringLiteral("Dashboard") : QStringLiteral("仪表盘");
+  if (key == QStringLiteral("library_title")) return en ? QStringLiteral("Content Library") : QStringLiteral("内容库");
+  if (key == QStringLiteral("hot_api_title")) return en ? QStringLiteral("Official Account Hot Articles API") : QStringLiteral("公众号爆文 API");
+  if (key == QStringLiteral("report_title")) return en ? QStringLiteral("Analysis Report") : QStringLiteral("拆解报告");
+  if (key == QStringLiteral("topics_title")) return en ? QStringLiteral("Topic Recommendations") : QStringLiteral("选题推荐");
+  if (key == QStringLiteral("plugins_title")) return en ? QStringLiteral("Plugins") : QStringLiteral("插件");
+  if (key == QStringLiteral("settings_title")) return en ? QStringLiteral("Settings") : QStringLiteral("设置");
+  if (key == QStringLiteral("load_samples")) return en ? QStringLiteral("Load sample data") : QStringLiteral("加载示例数据");
+  if (key == QStringLiteral("self_check")) return en ? QStringLiteral("Full self-test") : QStringLiteral("全流程自检");
+  if (key == QStringLiteral("collect_now")) return en ? QStringLiteral("Collect now") : QStringLiteral("立即采集");
+  if (key == QStringLiteral("preview_payload")) return en ? QStringLiteral("Generate request preview") : QStringLiteral("生成请求预览");
+  if (key == QStringLiteral("collect_hot")) return en ? QStringLiteral("Collect hot articles") : QStringLiteral("采集公众号爆文");
+  return key;
 }
 
 void AppController::loadMockArticles() {
@@ -175,6 +204,56 @@ int AppController::runEndpointCollection(const QString& endpointPath, const QStr
   }
   database_.recordCollectionRun(0, client_.isConfigured(config_.apiKey()) ? QStringLiteral("endpoint_success") : QStringLiteral("endpoint_mock_fallback"), inserted, path + QStringLiteral(" ") + error);
   setStatus(QStringLiteral("接口采集完成：%1 条").arg(inserted));
+  emit dataChanged();
+  return inserted;
+}
+
+QStringList AppController::hotTypicalParameterRows() const {
+  if (language_ == QStringLiteral("en")) {
+    return {
+        QStringLiteral("key | required | string | API key"),
+        QStringLiteral("keyword | optional | string | keyword, empty means all"),
+        QStringLiteral("pub_type | required | enum | 0 text+images, 5 video, 7 music, 8 images, 10 text, 11 repost"),
+        QStringLiteral("category | required | enum | 0 all, 1 international, 2 sports, 3 entertainment, 4 society, 5 finance, 6 current affairs, 7 tech, 8 emotion, 9 auto, 10 education, 11 fashion, 12 games, 13 military, 14 travel, 15 food, 16 culture, 17 health, 18 funny, 19 home, 20 anime, 21 pets, 22 maternal, 23 zodiac, 24 history, 25 music, 26 unclassified, 27 general, 28 workplace, 29 agriculture, 30 elder care"),
+        QStringLiteral("page | required | string | page number, first page is 1"),
+        QStringLiteral("start_time | required | date | start date YYYY-MM-DD"),
+        QStringLiteral("end_time | required | date | end date YYYY-MM-DD")};
+  }
+  return {
+      QStringLiteral("key｜必填｜字符串｜极致了 key"),
+      QStringLiteral("keyword｜可选｜字符串｜关键词，为空搜索全部"),
+      QStringLiteral("pub_type｜必填｜枚举｜0 图文，5 纯视频，7 纯音乐，8 纯图片，10 纯文字，11 转载文章"),
+      QStringLiteral("category｜必填｜枚举｜0 全部，1 国际，2 体育，3 娱乐，4 社会，5 财经，6 时事，7 科技，8 情感，9 汽车，10 教育，11 时尚，12 游戏，13 军事，14 旅游，15 美食，16 文化，17 健康，18 搞笑，19 家居，20 动漫，21 宠物，22 母婴，23 星座，24 历史，25 音乐，26 未分类，27 综合，28 职场，29 三农，30 养老"),
+      QStringLiteral("page｜必填｜字符串｜翻页参数，第一页为 1"),
+      QStringLiteral("start_time｜必填｜日期｜开始日期 YYYY-MM-DD"),
+      QStringLiteral("end_time｜必填｜日期｜截止日期 YYYY-MM-DD")};
+}
+
+QString AppController::hotTypicalPayloadPreview(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                                const QString& category, int page, const QString& startTime,
+                                                const QString& endTime) const {
+  QJsonObject root;
+  root["method"] = QStringLiteral("POST");
+  root["path"] = QStringLiteral("/fbmain/monitor/v3/hot_typical_search");
+  root["content_type"] = QStringLiteral("multipart/form-data");
+  root["payload"] = client_.buildHotTypicalSearchPayload(apiKey, keyword, pubType, category, page, startTime, endTime);
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
+
+int AppController::runHotTypicalCollection(const QString& apiKey, const QString& keyword, const QString& pubType,
+                                           const QString& category, int page, const QString& startTime,
+                                           const QString& endTime) {
+  const QString task_keyword = keyword.trimmed().isEmpty() ? QStringLiteral("公众号") : keyword.trimmed();
+  const QString key = apiKey.trimmed().isEmpty() ? config_.apiKey() : apiKey.trimmed();
+  QString error;
+  int inserted = 0;
+  const auto articles = client_.callHotTypicalSearchBlocking(QString(), key, task_keyword, pubType, category, qMax(1, page), startTime, endTime, &error);
+  for (const auto& article : articles) {
+    if (database_.upsertArticle(article)) ++inserted;
+  }
+  const QString params = hotTypicalPayloadPreview(key.isEmpty() ? QStringLiteral("[empty]") : QStringLiteral("[configured]"), task_keyword, pubType, category, qMax(1, page), startTime, endTime);
+  database_.recordCollectionRun(0, client_.isConfigured(key) ? QStringLiteral("hot_typical_success") : QStringLiteral("hot_typical_mock_fallback"), inserted, params.left(500) + QStringLiteral(" ") + error);
+  setStatus(QStringLiteral("公众号爆文采集完成：%1 条").arg(inserted));
   emit dataChanged();
   return inserted;
 }

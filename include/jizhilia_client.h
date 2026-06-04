@@ -2,6 +2,7 @@
 #include <QObject>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
+#include <QStringList>
 #include <QVector>
 #include "article.h"
 
@@ -39,6 +40,20 @@ class JizhiliaClient : public QObject {
    * @return 请求 JSON / Request JSON object
    */
   QJsonObject buildGenericPayload(const QString& keyword, int page, const QString& api_key, const QString& verify_code) const;
+
+  /**
+   * @brief 构造公众号爆文接口请求 / Build official-account hot article payload
+   * @details 对齐 Apifox 文档 `/fbmain/monitor/v3/hot_typical_search` 的 multipart/form-data 字段。
+   *          Matches the multipart/form-data fields documented for `/fbmain/monitor/v3/hot_typical_search`.
+   */
+  QJsonObject buildHotTypicalSearchPayload(const QString& api_key, const QString& keyword, const QString& pub_type,
+                                           const QString& category, int page, const QString& start_time,
+                                           const QString& end_time) const;
+
+  /**
+   * @brief 返回公众号爆文接口参数名 / Return hot article API parameter names
+   */
+  QStringList hotTypicalParameterNames() const;
 
   /**
    * @brief 生成示例文章 / Generate sample articles
@@ -101,6 +116,16 @@ class JizhiliaClient : public QObject {
   QVector<Article> callEndpointBlocking(const QString& base_url, const QString& endpoint_path, const QString& api_key, const QString& verify_code, const QString& keyword, int page, QString* error_message) const;
 
   /**
+   * @brief 调用公众号爆文接口 / Call hot article endpoint
+   * @details 使用 Apifox 文档中的全部参数构造请求；未配置 key 时进入本地示例回退。
+   *          Uses every documented Apifox parameter; falls back to local samples when key is not configured.
+   */
+  QVector<Article> callHotTypicalSearchBlocking(const QString& base_url, const QString& api_key, const QString& keyword,
+                                                const QString& pub_type, const QString& category, int page,
+                                                const QString& start_time, const QString& end_time,
+                                                QString* error_message) const;
+
+  /**
    * @brief 判断 HTTP 状态是否可重试 / Check whether HTTP status is retryable
    * @details 主要覆盖 429 和 5xx，供 fallback 与错误处理策略使用。
    *          Covers 429 and 5xx statuses for retry and fallback decisions.
@@ -137,4 +162,5 @@ class JizhiliaClient : public QObject {
    * @return 原始响应体 / Raw response body
    */
   QByteArray postJsonBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const;
+  QByteArray postMultipartBlocking(const QString& url, const QJsonObject& payload, QString* error_message) const;
 };

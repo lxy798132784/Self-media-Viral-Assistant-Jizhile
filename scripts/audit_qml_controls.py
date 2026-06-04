@@ -6,15 +6,7 @@ import sys
 root = pathlib.Path(__file__).resolve().parents[1]
 qml = root / "ui" / "Main.qml"
 text = qml.read_text(encoding="utf-8")
-buttons = re.findall(r'Button\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}', text, flags=re.S)
 problems = []
-labels = []
-for idx, body in enumerate(buttons, 1):
-    label = re.search(r'text:\s*"([^"]+)"', body)
-    label_text = label.group(1) if label else f"Button#{idx}"
-    labels.append(label_text)
-    if "onClicked:" not in body:
-        problems.append(f"Button#{idx} {label_text} missing onClicked")
 required_calls = [
     "loadMockArticles",
     "runCollection",
@@ -23,28 +15,40 @@ required_calls = [
     "exportXml",
     "createCollectionTask",
     "saveSettings",
-    "apiEndpointRows",
-    "runEndpointCollection",
     "pluginRows",
     "pluginAnalysis",
     "runRows",
     "runFullSelfCheck",
+    "setLanguage",
+    "trText",
+    "hotTypicalParameterRows",
+    "hotTypicalPayloadPreview",
+    "runHotTypicalCollection",
 ]
-required_labels = [
-    "加载示例数据", "全流程自检", "立即采集", "刷新", "导出 Markdown", "导出 XML", "重新推荐",
-    "查询接口", "按接口采集", "刷新插件", "插件分析", "保存采集任务", "保存设置",
+required_controls = [
+    'text: "中文"', 'text: "English"',
+    "id: hotKey", "id: hotKeyword", "id: hotPubType", "id: hotCategory", "id: hotPage", "id: hotStart", "id: hotEnd",
+    "root.t(\"preview_payload\")", "root.t(\"collect_hot\")",
+    "appController.language === \"en\"", "appController.language === \"zh\"",
 ]
+required_hot_params = ["key", "keyword", "pub_type", "category", "page", "start_time", "end_time"]
 for call in required_calls:
     if call not in text:
         problems.append(f"missing QML call: {call}")
-for label in required_labels:
-    if label not in labels:
-        problems.append(f"missing visible button: {label}")
-for forbidden in ["开发", "实现", "布" + "局调整", "Mock " + "采集闭环", "占位"]:
+for item in required_controls:
+    if item not in text:
+        problems.append(f"missing QML control/expression: {item}")
+for param in required_hot_params:
+    if param not in text:
+        problems.append(f"missing hot API parameter in QML: {param}")
+button_count = text.count("Button {")
+if button_count < 17:
+    problems.append(f"expected at least 17 buttons, found {button_count}")
+for forbidden in [" / Dashboard", " / Content Library", " / Analysis Report", " / Topic Recommendations", " / Plugins", " / Settings", "开发", "实现", "布" + "局调整", "占位"]:
     if forbidden in text:
-        problems.append(f"forbidden user-visible/internal wording: {forbidden}")
+        problems.append(f"forbidden mixed/internal wording: {forbidden}")
 if problems:
     print("UI audit failed:")
     print("\n".join(problems))
     sys.exit(1)
-print(f"OK: {len(buttons)} visible buttons audited; endpoint/API/plugin controls verified")
+print(f"OK: {button_count} visible buttons audited; language switch and hot API controls verified")
