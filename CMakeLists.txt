@@ -8,6 +8,10 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 6.2 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Sql Network Test)
 
+if(WIN32)
+    set(CMAKE_WIN32_EXECUTABLE ON)
+endif()
+
 qt_add_executable(media-hit-assistant
     include/app_controller.h
     include/config_manager.h

@@ -69,7 +69,7 @@ interactive_surfaces = ["StatCard", "Article", "API parameter", "Report", "Topic
 for surface in interactive_surfaces:
     if surface not in text:
         problems.append(f"missing interactive surface marker: {surface}")
-for forbidden in [" / Dashboard", " / Content Library", " / Analysis Report", " / Topic Recommendations", " / Plugins", " / Settings", "开发", "实现", "布" + "局调整", "占位"]:
+for forbidden in [" / Dashboard", " / Content Library", " / Analysis Report", " / Topic Recommendations", " / Plugins", " / Settings", "开发", "实现", "布" + "局调整", "占位", "公众号爆文 API", "爆文 API", "极致了 API", "Jizhilia API"]:
     if forbidden in text:
         problems.append(f"forbidden mixed/internal wording: {forbidden}")
 if problems:

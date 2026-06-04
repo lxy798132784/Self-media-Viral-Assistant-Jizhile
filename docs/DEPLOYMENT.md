@@ -134,6 +134,18 @@ Expand-Archive .\media-hit-assistant-windows-x64.zip -DestinationPath .\media-hi
 .\media-hit-assistant\media-hit-assistant.exe
 ```
 
+### If the window closes immediately
+
+If double-clicking `media-hit-assistant.exe` opens a command window that disappears immediately, run the diagnostic launcher from the same folder instead:
+
+```powershell
+.\media-hit-assistant\run-with-log.bat
+```
+
+It writes `media-hit-assistant.log` next to the executable and keeps the console open when startup fails. This makes missing Qt/runtime DLLs, unsigned-app security blocking, and QML/graphics/path startup failures visible.
+
+New Windows packages run `media-hit-assistant.exe --self-test` from the packaged distribution directory and must include `run-with-log.bat`, so the Release gate checks the same layout that users extract.
+
 ### Uninstall
 
 Delete the extracted `media-hit-assistant` folder and the downloaded zip. The app does not require a Windows installer service.

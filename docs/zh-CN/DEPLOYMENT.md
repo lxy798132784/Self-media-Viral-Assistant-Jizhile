@@ -138,6 +138,18 @@ Expand-Archive .\media-hit-assistant-windows-x64.zip -DestinationPath .\media-hi
 .\media-hit-assistant\media-hit-assistant.exe
 ```
 
+### 安装后一闪而过怎么办
+
+如果双击 `media-hit-assistant.exe` 后命令窗口一闪而过，先不要反复双击，改运行同目录下的诊断启动器：
+
+```powershell
+.\media-hit-assistant\run-with-log.bat
+```
+
+它会在同目录生成 `media-hit-assistant.log`，并在启动失败时停住窗口显示错误。这样能区分三类问题：Qt 或运行时 DLL 缺失、Windows 安全策略拦截未签名程序、QML/图形后端/路径加载失败。
+
+新版 Windows 包在打包时会直接运行解压目录里的 `media-hit-assistant.exe --self-test`，并强制包含 `run-with-log.bat`，避免只有构建目录可运行、发布目录不可运行。
+
 ### 怎么卸载
 
 删除解压后的 `media-hit-assistant` 文件夹和下载的 zip 文件即可。当前版本不需要 Windows 安装服务。
