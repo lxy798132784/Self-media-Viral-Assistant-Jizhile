@@ -43,6 +43,8 @@ ApplicationWindow {
     property string selectedTaskRow: ""
     property var runRows: appController.runRows()
     property alias currentPageIndex: stack.currentIndex
+    property int hotSortColumn: -1
+    property bool hotSortAscending: true
 
     function t(key) { appController.language; return appController.trText(key) }
     function setDetail(title, body) {
@@ -59,6 +61,7 @@ ApplicationWindow {
     property var hotWidths: [52, 380, 170, 150, 88, 108, 92, 108, 108]
     function hotTableWidth() { var n = 0; for (var i = 0; i < hotWidths.length; ++i) n += hotWidths[i]; return n }
     function resizeHotColumn(column, delta) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, next[column] + delta); hotWidths = next }
+    function setHotColumnWidth(column, width) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, width); hotWidths = next }
     function compactNumber(value) {
         var n = Number(String(value).replace(/[^0-9.\-]/g, ""))
         if (!isFinite(n)) return value
@@ -70,6 +73,36 @@ ApplicationWindow {
         var v = hotCell(rowText, column)
         if (column >= 4 && column <= 7) return compactNumber(v)
         return v
+    }
+    function hotSortValue(rowText, displayColumn) {
+        if (displayColumn <= 0) return 0
+        var rawColumn = displayColumn - 1
+        var v = hotCell(rowText, rawColumn)
+        if (displayColumn >= 4 && displayColumn <= 8) {
+            var n = Number(String(v).replace(/[^0-9.\-]/g, ""))
+            return isFinite(n) ? n : -1
+        }
+        if (displayColumn === 3) {
+            var t = Date.parse(String(v).replace(/-/g, "/"))
+            return isFinite(t) ? t : 0
+        }
+        return String(v).toLowerCase()
+    }
+    function sortHotRows(column) {
+        if (column <= 0) return
+        if (hotSortColumn === column) hotSortAscending = !hotSortAscending
+        else { hotSortColumn = column; hotSortAscending = true }
+        var sorted = hotRows.slice()
+        sorted.sort(function(a, b) {
+            var av = root.hotSortValue(a, column)
+            var bv = root.hotSortValue(b, column)
+            var cmp = 0
+            if (typeof av === "number" && typeof bv === "number") cmp = av === bv ? 0 : (av < bv ? -1 : 1)
+            else cmp = String(av).localeCompare(String(bv))
+            return hotSortAscending ? cmp : -cmp
+        })
+        hotRows = sorted
+        selectedHotRow = -1
     }
     function hotRowDetail(rowText) {
         var title = hotCell(rowText, 0)
@@ -541,7 +574,7 @@ ApplicationWindow {
                 font.pixelSize: 14
             }
         }
-        MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.IBeamCursor; ToolTip.visible: containsMouse; ToolTip.text: appController.language === "en" ? "Details" : "详情" }
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.IBeamCursor }
     }
 
     component RowCard: Rectangle {
@@ -634,6 +667,7 @@ ApplicationWindow {
             }
             RowLayout { Layout.fillWidth: true; spacing: 10
                 Label { text: appController.language === "en" ? "Parsed result table" : "解析结果表"; color: textMain; font.pixelSize: 18; font.bold: true; Layout.fillWidth: true }
+                AppButton { text: appController.language === "en" ? "Copy details" : "复制详情"; enabled: selectedHotRow >= 0 && selectedHotRow < hotRows.length; highlighted: selectedHotRow >= 0 && selectedHotRow < hotRows.length; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Copy selected row details" : "复制选中行详情"; onClicked: appController.copyTextToClipboard(root.hotRowDetail(hotRows[selectedHotRow])) }
                 AppButton { text: appController.language === "en" ? "Refresh" : "刷新"; ToolTip.visible: hovered; ToolTip.text: "刷新解析结果"; onClicked: refreshHotRows() }
                 AppButton { text: appController.language === "en" ? "Export..." : "导出..."; ToolTip.visible: hovered; ToolTip.text: "选择格式和路径"; onClicked: exportDialog.openForHotResults() }
             }
@@ -675,25 +709,59 @@ ApplicationWindow {
     component HeaderCell: Rectangle {
         property string text: ""
         property int column: 0
+        property bool sortable: column > 0
         width: root.hotWidths[column]
         height: 44
-        color: card2
+        color: hotSortColumn === column ? "#1b1d24" : card2
         border.color: line
-        Label { anchors.centerIn: parent; width: parent.width - 18; text: parent.text; color: textMain; font.bold: true; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
-        Rectangle { anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom; width: 5; color: dragger.containsMouse ? accent : "transparent" }
+        Label {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 8
+            anchors.right: parent.right
+            anchors.rightMargin: column < root.hotWidths.length - 1 ? 18 : 8
+            text: parent.text + (hotSortColumn === column ? (hotSortAscending ? " ↑" : " ↓") : (sortable ? " ⇅" : ""))
+            color: textMain
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+        }
         MouseArea {
-            id: dragger
+            anchors.fill: parent
+            anchors.rightMargin: column < root.hotWidths.length - 1 ? 14 : 0
+            hoverEnabled: true
+            cursorShape: sortable ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: if (sortable) root.sortHotRows(column)
+
+        }
+        Rectangle {
+            visible: column < root.hotWidths.length - 1
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: 14
+            width: 6
+            color: dragger.pressed || dragger.containsMouse ? accent : "transparent"
+        }
+        MouseArea {
+            id: dragger
+            visible: column < root.hotWidths.length - 1
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: 18
             hoverEnabled: true
             cursorShape: Qt.SizeHorCursor
-            property real lastX: 0
-            onPressed: lastX = mouse.x
-            onPositionChanged: if (pressed) root.resizeHotColumn(column, mouse.x - lastX)
-            ToolTip.visible: containsMouse
-            ToolTip.text: appController.language === "en" ? "Drag to resize column" : "拖动调整列宽"
+            property real startSceneX: 0
+            property real startWidth: 0
+            onPressed: {
+                startSceneX = mapToItem(root, mouse.x, mouse.y).x
+                startWidth = root.hotWidths[column]
+            }
+            onPositionChanged: if (pressed) {
+                var currentSceneX = mapToItem(root, mouse.x, mouse.y).x
+                root.setHotColumnWidth(column, startWidth + currentSceneX - startSceneX)
+            }
+
         }
     }
     component Cell: Rectangle {
@@ -738,7 +806,7 @@ ApplicationWindow {
         Flickable {
             id: rowDetailFlick
             anchors.fill: parent
-            anchors.margins: 12
+            anchors.margins: 10
             clip: true
             contentWidth: width
             contentHeight: rowDetailText.height
@@ -754,7 +822,6 @@ ApplicationWindow {
                 font.pixelSize: 14
             }
         }
-        MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: Qt.IBeamCursor; ToolTip.visible: containsMouse; ToolTip.text: appController.language === "en" ? "Selected row details" : "选中行详情" }
     }
 
     component SimpleTextPage: PageFrame {

@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QGuiApplication>
+#include <QClipboard>
 #include <QStandardPaths>
 #include <QThread>
 
@@ -580,6 +582,17 @@ void AppController::noteSelection(const QString& area, const QString& value) {
   const QString clean_area = area.trimmed().isEmpty() ? QStringLiteral("unknown") : area.trimmed();
   const QString clean_value = value.trimmed().isEmpty() ? QStringLiteral("[empty]") : value.trimmed();
   setStatus(QStringLiteral("%1 已选中：%2 / Selected: %2").arg(clean_area, clean_value));
+}
+
+bool AppController::copyTextToClipboard(const QString& text) {
+  auto* clipboard = QGuiApplication::clipboard();
+  if (!clipboard) {
+    setStatus(language_ == QStringLiteral("en") ? QStringLiteral("Clipboard unavailable") : QStringLiteral("剪贴板不可用"));
+    return false;
+  }
+  clipboard->setText(text);
+  setStatus(language_ == QStringLiteral("en") ? QStringLiteral("Copied") : QStringLiteral("已复制"));
+  return true;
 }
 
 void AppController::setStatus(const QString& status) {

@@ -53,7 +53,7 @@ add_executable(unit_tests
 )
 target_include_directories(unit_tests PRIVATE include)
 target_compile_definitions(unit_tests PRIVATE MEDIA_HIT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-target_link_libraries(unit_tests PRIVATE Qt6::Core Qt6::Sql Qt6::Network Qt6::Test)
+target_link_libraries(unit_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Sql Qt6::Network Qt6::Test)
 add_test(NAME unit_tests COMMAND unit_tests WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # 一次性真实 API 探针（仅手动运行，不参与 CTest），验证诚实信封端到端。

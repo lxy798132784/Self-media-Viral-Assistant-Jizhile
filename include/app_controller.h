@@ -102,6 +102,7 @@ class AppController : public QObject {
   Q_INVOKABLE QStringList runRows() const;
   Q_INVOKABLE bool runFullSelfCheck(const QString& exportDir);
   Q_INVOKABLE void noteSelection(const QString& area, const QString& value);
+  Q_INVOKABLE bool copyTextToClipboard(const QString& text);
  signals:
   void statusChanged();
   void languageChanged();
