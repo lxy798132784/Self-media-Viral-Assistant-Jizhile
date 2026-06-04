@@ -1,0 +1,145 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux-amd64:
+    name: Build Linux amd64 package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ python3 zip qt6-base-dev qt6-declarative-dev qt6-tools-dev qt6-tools-dev-tools libxkbcommon-dev qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build and verify
+        run: |
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+          QT_QPA_PLATFORM=offscreen ./build/media-hit-assistant --self-test
+          python3 scripts/audit_qml_controls.py
+          python3 scripts/audit_devprompt_alignment.py
+
+      - name: Build installed Linux amd64 archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          ASSET_ROOT="media-hit-assistant-${VERSION}-linux-amd64"
+          rm -rf release-out "$ASSET_ROOT"
+          cmake --install build --prefix "$PWD/$ASSET_ROOT/usr"
+          test -x "$ASSET_ROOT/usr/bin/media-hit-assistant"
+          test -s "$ASSET_ROOT/usr/share/doc/MediaHitAssistant/README.md"
+          test -s "$ASSET_ROOT/usr/share/doc/MediaHitAssistant/docs/README.zh-CN.md"
+          test -s "$ASSET_ROOT/usr/share/media-hit-assistant/vendor/api-index.json"
+          tar -czf "${ASSET_ROOT}.tar.gz" "$ASSET_ROOT"
+          mkdir -p release-out
+          mv "${ASSET_ROOT}.tar.gz" release-out/
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64-asset
+          path: release-out/*
+          if-no-files-found: error
+
+  windows-x64:
+    name: Build Windows x64 package
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.3'
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
+
+      - name: Enable MSVC developer shell
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja
+        run: choco install ninja -y --no-progress
+
+      - name: Package Windows x64
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          .\scripts\package-windows.ps1 -BuildDir build-win -Config Release -DistDir "media-hit-assistant-$version-windows-x64"
+          New-Item -ItemType Directory -Force -Path release-out | Out-Null
+          Move-Item "media-hit-assistant-$version-windows-x64.zip" release-out\
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-asset
+          path: release-out/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-24.04
+    needs: [linux-amd64, windows-x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Add source, docs, notes, and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          git archive --format=tar.gz --prefix="media-hit-assistant-${VERSION}/" HEAD > "release-assets/media-hit-assistant-${VERSION}-source.tar.gz"
+          git archive --format=zip --prefix="media-hit-assistant-${VERSION}/" HEAD > "release-assets/media-hit-assistant-${VERSION}-source.zip"
+          zip -r "release-assets/media-hit-assistant-${VERSION}-docs.zip" README.md LICENSE CHANGELOG.md docs plugins vendor/jizhilia-api-knowledge/api-index.json
+          cat > release-assets/RELEASE_NOTES.md <<EOF
+          # Media Hit Assistant ${GITHUB_REF_NAME}
+
+          This release is produced by the native multi-platform GitHub Actions release workflow.
+
+          ## Assets
+          - Linux amd64 installed-tree archive.
+          - Windows x64 zip package built on windows-2022 with Qt deployment when available.
+          - Source archives generated from the exact release commit.
+          - Documentation bundle and SHA256SUMS.
+
+          ## Verification
+          - CMake build.
+          - CTest unit tests.
+          - Offscreen self-test.
+          - QML control audit.
+          - DevPrompt alignment audit.
+          - Package structure checks.
+          EOF
+          (cd release-assets && sha256sum * > SHA256SUMS)
+          sort -o release-assets/SHA256SUMS release-assets/SHA256SUMS
+          ls -lh release-assets
+
+      - name: Upload assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          body_path: release-assets/RELEASE_NOTES.md
+          make_latest: true

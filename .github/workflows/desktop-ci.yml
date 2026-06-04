@@ -25,6 +25,8 @@ jobs:
         run: python3 scripts/audit_qml_controls.py
       - name: DevPrompt alignment audit
         run: python3 scripts/audit_devprompt_alignment.py
+      - name: Release workflow audit
+        run: python3 scripts/audit_release_workflow.py
       - name: Package smoke
         run: ./scripts/package-linux.sh
       - name: Install smoke

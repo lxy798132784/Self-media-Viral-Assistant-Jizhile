@@ -16,7 +16,8 @@ All notable changes to this project are summarized here.
 - Linux, Windows, and Docker delivery scripts.
 - QML control audit and documentation alignment audit.
 - Open-source documentation set with separate English and Chinese docs.
-- Governance files: license, contributing guide, security policy, code of conduct, issue templates, pull request template, release notes template, changelog, and Dependabot config.
+- Native GitHub Actions release workflow for Linux amd64 and Windows x64 packages.
+- Release workflow audit gate for multi-platform assets and checksums.
 
 ### Fixed
 
