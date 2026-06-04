@@ -45,6 +45,11 @@ ApplicationWindow {
     property alias currentPageIndex: stack.currentIndex
     property int hotSortColumn: -1
     property bool hotSortAscending: true
+    property bool hotResizeActive: false
+    property bool hotResizeMoved: false
+    property int hotResizeColumn: -1
+    property real hotResizeStartX: 0
+    property real hotResizeStartWidth: 0
 
     function t(key) { appController.language; return appController.trText(key) }
     function setDetail(title, body) {
@@ -62,6 +67,23 @@ ApplicationWindow {
     function hotTableWidth() { var n = 0; for (var i = 0; i < hotWidths.length; ++i) n += hotWidths[i]; return n }
     function resizeHotColumn(column, delta) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, next[column] + delta); hotWidths = next }
     function setHotColumnWidth(column, width) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, width); hotWidths = next }
+    function beginHotResize(column, sceneX) {
+        hotResizeActive = true
+        hotResizeMoved = false
+        hotResizeColumn = column
+        hotResizeStartX = sceneX
+        hotResizeStartWidth = hotWidths[column]
+    }
+    function updateHotResize(sceneX) {
+        if (!hotResizeActive || hotResizeColumn < 0) return
+        var delta = sceneX - hotResizeStartX
+        if (Math.abs(delta) > 1) hotResizeMoved = true
+        setHotColumnWidth(hotResizeColumn, hotResizeStartWidth + delta)
+    }
+    function endHotResize() {
+        hotResizeActive = false
+        hotResizeColumn = -1
+    }
     function compactNumber(value) {
         var n = Number(String(value).replace(/[^0-9.\-]/g, ""))
         if (!isFinite(n)) return value
@@ -704,6 +726,25 @@ ApplicationWindow {
                 }
             }
         }
+        MouseArea {
+            anchors.fill: parent
+            z: 1000
+            visible: root.hotResizeActive
+            enabled: root.hotResizeActive
+            hoverEnabled: true
+            acceptedButtons: Qt.LeftButton
+            preventStealing: true
+            cursorShape: Qt.SizeHorCursor
+            onPositionChanged: {
+                mouse.accepted = true
+                root.updateHotResize(mapToGlobal(mouse.x, mouse.y).x)
+            }
+            onReleased: {
+                mouse.accepted = true
+                root.endHotResize()
+            }
+            onCanceled: root.endHotResize()
+        }
     }
 
     component HeaderCell: Rectangle {
@@ -740,7 +781,7 @@ ApplicationWindow {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             width: 6
-            color: dragger.pressed || dragger.containsMouse ? accent : "transparent"
+            color: (root.hotResizeActive && root.hotResizeColumn === column) || dragger.containsMouse ? accent : "transparent"
         }
         MouseArea {
             id: dragger
@@ -750,17 +791,22 @@ ApplicationWindow {
             anchors.bottom: parent.bottom
             width: 18
             hoverEnabled: true
+            preventStealing: true
+            acceptedButtons: Qt.LeftButton
             cursorShape: Qt.SizeHorCursor
-            property real startSceneX: 0
-            property real startWidth: 0
             onPressed: {
-                startSceneX = mapToItem(root, mouse.x, mouse.y).x
-                startWidth = root.hotWidths[column]
+                mouse.accepted = true
+                root.beginHotResize(column, mapToGlobal(mouse.x, mouse.y).x)
             }
-            onPositionChanged: if (pressed) {
-                var currentSceneX = mapToItem(root, mouse.x, mouse.y).x
-                root.setHotColumnWidth(column, startWidth + currentSceneX - startSceneX)
+            onPositionChanged: if (pressed || root.hotResizeActive) {
+                mouse.accepted = true
+                root.updateHotResize(mapToGlobal(mouse.x, mouse.y).x)
             }
+            onReleased: {
+                mouse.accepted = true
+                root.endHotResize()
+            }
+            onCanceled: root.endHotResize()
 
         }
     }
