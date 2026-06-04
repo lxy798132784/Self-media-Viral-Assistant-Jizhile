@@ -75,9 +75,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Install Ninja
-        run: choco install ninja -y --no-progress
-
       - name: Package Windows x64
         shell: pwsh
         run: |

@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
-cmake -S . -B $BuildDir -G Ninja -DCMAKE_BUILD_TYPE=$Config
+cmake -S . -B $BuildDir -DCMAKE_BUILD_TYPE=$Config
 cmake --build $BuildDir --config $Config --parallel 2
 ctest --test-dir $BuildDir --output-on-failure
 
