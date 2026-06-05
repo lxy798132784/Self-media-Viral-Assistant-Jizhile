@@ -108,6 +108,15 @@ void AppController::loadMockArticles() {
   a.readCount = 128000;
   a.likeCount = 5200;
   a.watchCount = 3100;
+  a.hotScore = 96.8;
+  a.avgReadCount = 64000;
+  a.fansCount = 380000;
+  a.position = 1;
+  a.wxid = QStringLiteral("gh_mock_growth_001");
+  a.category = QStringLiteral("科技");
+  a.isOriginal = QStringLiteral("原创");
+  a.publishType = QStringLiteral("图文");
+  a.coverUrl = QStringLiteral("mock://cover/hit-article-1");
   a.summary = QStringLiteral("强情绪标题、明确人群、故事化开头、可转发结论。");
   database_.upsertArticle(a);
 
@@ -120,6 +129,15 @@ void AppController::loadMockArticles() {
   b.readCount = 76000;
   b.likeCount = 2100;
   b.watchCount = 1300;
+  b.hotScore = 82.4;
+  b.avgReadCount = 38000;
+  b.fansCount = 160000;
+  b.position = 2;
+  b.wxid = QStringLiteral("gh_mock_method_002");
+  b.category = QStringLiteral("职场");
+  b.isOriginal = QStringLiteral("非原创");
+  b.publishType = QStringLiteral("转载");
+  b.coverUrl = QStringLiteral("mock://cover/hit-article-2");
   b.summary = QStringLiteral("用历史爆文、实时搜一搜和评论高频词组合选题。");
   database_.upsertArticle(b);
   setStatus(QStringLiteral("已加载示例数据 / Mock articles loaded"));
@@ -129,7 +147,12 @@ void AppController::loadMockArticles() {
 QStringList AppController::articleRows(const QString& keyword) const {
   QStringList rows;
   for (const auto& a : database_.listArticles(keyword)) {
-    rows << QStringLiteral("%1｜%2｜阅读 %3｜点赞 %4").arg(a.title, a.accountName).arg(a.readCount).arg(a.likeCount);
+    rows << QStringLiteral("%1｜%2｜阅读 %3｜点赞 %4｜爆值 %5｜%6｜%7｜位置 %8")
+                .arg(a.title, a.accountName).arg(a.readCount).arg(a.likeCount)
+                .arg(a.hotScore, 0, 'f', 1)
+                .arg(a.category.isEmpty() ? QStringLiteral("未分类") : a.category,
+                     a.publishType.isEmpty() ? QStringLiteral("未知类型") : a.publishType)
+                .arg(a.position);
   }
   return rows;
 }
@@ -140,7 +163,9 @@ QString AppController::generateReport() const {
   QString report = QStringLiteral("# 拆解报告 / Analysis Report\n\n");
   for (const auto& a : rows) {
     const int score = a.readCount / 1000 + a.likeCount / 100;
-    report += QStringLiteral("## %1\n- 账号：%2\n- 爆款评分：%3\n- 观察：%4\n\n").arg(a.title, a.accountName).arg(score).arg(a.summary);
+    report += QStringLiteral("## %1\n- 账号：%2\n- 爆款评分：%3\n- API 字段：爆值 %4；分类 %5；类型 %6；原创 %7；发文位置 %8；均读 %9；粉丝 %10\n- 观察：%11\n\n")
+                  .arg(a.title, a.accountName).arg(score).arg(a.hotScore, 0, 'f', 1)
+                  .arg(a.category, a.publishType, a.isOriginal).arg(a.position).arg(a.avgReadCount).arg(a.fansCount).arg(a.summary);
   }
   return report;
 }
@@ -393,9 +418,12 @@ int AppController::runHotTypicalCollection(const QString& apiKey, const QString&
 QStringList AppController::hotTypicalResultRows() const {
   QStringList rows;
   for (const auto& a : hot_typical_results_) {
-    rows << QStringLiteral("%1｜%2｜%3｜%4｜%5｜%6｜%7｜%8｜%9")
+    // 顺序对齐官方文档返回字段：title/mp_nickname/pub_time/hot/read_num/zan_num/avg/fans/category/
+    // position/is_original/publish_type/wxid/cover/url。QML 通过同一顺序渲染完整解析结果表。
+    rows << QStringLiteral("%1｜%2｜%3｜%4｜%5｜%6｜%7｜%8｜%9｜%10｜%11｜%12｜%13｜%14｜%15")
               .arg(a.title, a.accountName.isEmpty() ? a.author : a.accountName, a.publishTime)
-              .arg(a.hotScore, 0, 'f', 1).arg(a.readCount).arg(a.likeCount).arg(a.avgReadCount).arg(a.fansCount).arg(a.url);
+              .arg(a.hotScore, 0, 'f', 1).arg(a.readCount).arg(a.likeCount).arg(a.avgReadCount).arg(a.fansCount)
+              .arg(a.category, QString::number(a.position), a.isOriginal, a.publishType, a.wxid, a.coverUrl, a.url);
   }
   return rows;
 }
@@ -448,9 +476,18 @@ QString AppController::articleDetail(const QString& articleRow) const {
       root["author"] = a.author;
       root["url"] = a.url;
       root["publish_time"] = a.publishTime;
+      root["hot_score"] = a.hotScore;
       root["reads"] = a.readCount;
       root["likes"] = a.likeCount;
       root["watches"] = a.watchCount;
+      root["avg_read_count"] = a.avgReadCount;
+      root["fans_count"] = a.fansCount;
+      root["position"] = a.position;
+      root["wxid"] = a.wxid;
+      root["category"] = a.category;
+      root["is_original"] = a.isOriginal;
+      root["publish_type"] = a.publishType;
+      root["cover_url"] = a.coverUrl;
       root["summary"] = a.summary;
       return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Indented));
     }

@@ -63,7 +63,7 @@ ApplicationWindow {
         var cells = String(rowText).split("｜")
         return column < cells.length ? cells[column] : ""
     }
-    property var hotWidths: [52, 380, 170, 150, 88, 108, 92, 108, 108]
+    property var hotWidths: [52, 380, 170, 150, 88, 108, 92, 108, 108, 110, 92, 112, 112, 150, 240, 360]
     function hotTableWidth() { var n = 0; for (var i = 0; i < hotWidths.length; ++i) n += hotWidths[i]; return n }
     function resizeHotColumn(column, delta) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, next[column] + delta); hotWidths = next }
     function setHotColumnWidth(column, width) { var next = hotWidths.slice(); next[column] = Math.max(column === 1 ? 220 : 72, width); hotWidths = next }
@@ -135,11 +135,17 @@ ApplicationWindow {
         var likes = hotCell(rowText, 5)
         var avg = hotCell(rowText, 6)
         var fans = hotCell(rowText, 7)
-        var url = hotCell(rowText, 8)
+        var url = hotCell(rowText, 14)
+        var category = hotCell(rowText, 8)
+        var position = hotCell(rowText, 9)
+        var original = hotCell(rowText, 10)
+        var publishType = hotCell(rowText, 11)
+        var wxid = hotCell(rowText, 12)
+        var cover = hotCell(rowText, 13)
         if (appController.language === "en") {
-            return "Title: " + title + "\nAccount: " + account + "\nPublished: " + published + "\nHot score: " + hot + "\nReads: " + compactNumber(reads) + " (" + reads + ")\nLikes: " + compactNumber(likes) + " (" + likes + ")\nAvg reads: " + compactNumber(avg) + " (" + avg + ")\nFans: " + compactNumber(fans) + " (" + fans + ")\nLink: " + url
+            return "Title: " + title + "\nAccount: " + account + "\nPublished: " + published + "\nHot score: " + hot + "\nReads: " + compactNumber(reads) + " (" + reads + ")\nLikes: " + compactNumber(likes) + " (" + likes + ")\nAvg reads: " + compactNumber(avg) + " (" + avg + ")\nFans: " + compactNumber(fans) + " (" + fans + ")\nCategory: " + category + "\nPosition: " + position + "\nOriginal: " + original + "\nPublish type: " + publishType + "\nWeChat ID: " + wxid + "\nCover: " + cover + "\nLink: " + url
         }
-        return "标题：" + title + "\n账号：" + account + "\n发布时间：" + published + "\n爆值：" + hot + "\n阅读：" + compactNumber(reads) + "（" + reads + "）\n点赞：" + compactNumber(likes) + "（" + likes + "）\n均读：" + compactNumber(avg) + "（" + avg + "）\n粉丝：" + compactNumber(fans) + "（" + fans + "）\n链接：" + url
+        return "标题：" + title + "\n账号：" + account + "\n发布时间：" + published + "\n爆值：" + hot + "\n阅读：" + compactNumber(reads) + "（" + reads + "）\n点赞：" + compactNumber(likes) + "（" + likes + "）\n均读：" + compactNumber(avg) + "（" + avg + "）\n粉丝：" + compactNumber(fans) + "（" + fans + "）\n分类：" + category + "\n发文位置：" + position + "\n是否原创：" + original + "\n爆文类型：" + publishType + "\n微信ID：" + wxid + "\n封面：" + cover + "\n链接：" + url
     }
     function hotExportPath(format) {
         var ext = format === "xml" ? "xml" : (format === "xls" ? "xls" : "md")
@@ -151,7 +157,7 @@ ApplicationWindow {
             dashboard: "查看内容数量、阅读点赞汇总和最近操作状态，适合快速确认当前数据情况。",
             library: "搜索本地内容库，查看文章详情并导出结果。列表区域可独立滚动。",
             hot: "设置关键词、类型、分类、页码和日期范围后采集真实爆文数据。",
-            results: "按标题、账号、时间和核心指标查看解析结果。表格支持横向滚动、纵向滚动、选中行查看详情，并可拖动表头分隔线调整列宽。",
+            results: "按标题、账号、时间和完整 API 字段查看解析结果：爆值、阅读、点赞、均读、粉丝、分类、发文位置、是否原创、爆文类型、微信ID、封面和链接。表格支持横向滚动、纵向滚动、选中行查看详情，并可拖动表头分隔线调整列宽。",
             report: "查看可复制、可导出的内容拆解摘要。",
             topics: "查看选题建议，点击卡片可预览后续处理内容。",
             plugins: "查看当前可用能力与分析结果。",
@@ -163,7 +169,7 @@ ApplicationWindow {
             dashboard: "View content counts, read/like summaries, and the latest operation status.",
             library: "Search the local content library, view details, and export results. The list scrolls independently.",
             hot: "Collect real hot-article data with keyword, type, category, page, and date filters.",
-            results: "Review parsed results by title, account, time, and key metrics. The table supports horizontal/vertical scrolling, row details, and draggable column dividers.",
+            results: "Review parsed results with all API fields: hot score, reads, likes, avg reads, fans, category, position, original flag, publish type, WeChat ID, cover, and link. The table supports horizontal/vertical scrolling, row details, and draggable column dividers.",
             report: "View copyable and exportable content breakdown summaries.",
             topics: "Review topic ideas and click cards to preview next-step content.",
             plugins: "View available capabilities and analysis output.",
@@ -694,7 +700,7 @@ ApplicationWindow {
                 AppButton { text: appController.language === "en" ? "Export..." : "导出..."; ToolTip.visible: hovered; ToolTip.text: "选择格式和路径"; onClicked: exportDialog.openForHotResults() }
             }
             DataGrid { Layout.fillWidth: true; Layout.fillHeight: true }
-            DetailPanel { Layout.fillWidth: true; Layout.preferredHeight: 150; text: selectedHotRow >= 0 && selectedHotRow < hotRows.length ? root.hotRowDetail(hotRows[selectedHotRow]) : (appController.language === "en" ? "Select a row to view title, metrics, and link." : "选择一行后查看标题、指标和链接。") }
+            DetailPanel { Layout.fillWidth: true; Layout.preferredHeight: 230; text: selectedHotRow >= 0 && selectedHotRow < hotRows.length ? root.hotRowDetail(hotRows[selectedHotRow]) : (appController.language === "en" ? "Select a row to view full API fields: original flag, type, position, category, WeChat ID, cover, metrics, and link." : "选择一行后查看完整 API 字段：是否原创、爆文类型、发文位置、分类、微信ID、封面、指标和链接。") }
         }
     }
 
@@ -720,6 +726,13 @@ ApplicationWindow {
                     HeaderCell { text: appController.language === "en" ? "Likes" : "点赞"; column: 6 }
                     HeaderCell { text: appController.language === "en" ? "Avg" : "均读"; column: 7 }
                     HeaderCell { text: appController.language === "en" ? "Fans" : "粉丝"; column: 8 }
+                    HeaderCell { text: appController.language === "en" ? "Category" : "分类"; column: 9 }
+                    HeaderCell { text: appController.language === "en" ? "Position" : "位置"; column: 10 }
+                    HeaderCell { text: appController.language === "en" ? "Original" : "是否原创"; column: 11 }
+                    HeaderCell { text: appController.language === "en" ? "Type" : "爆文类型"; column: 12 }
+                    HeaderCell { text: appController.language === "en" ? "WeChat ID" : "微信ID"; column: 13 }
+                    HeaderCell { text: appController.language === "en" ? "Cover" : "封面"; column: 14 }
+                    HeaderCell { text: appController.language === "en" ? "Link" : "链接"; column: 15 }
                 }
                 Repeater { model: root.hotRows
                     DataRow { rowIndex: index; rowText: modelData }
@@ -838,6 +851,13 @@ ApplicationWindow {
             Cell { text: root.hotDisplayCell(rowText, 5); column: 6; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
             Cell { text: root.hotDisplayCell(rowText, 6); column: 7; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
             Cell { text: root.hotDisplayCell(rowText, 7); column: 8; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignRight }
+            Cell { text: root.hotDisplayCell(rowText, 8); column: 9; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignHCenter }
+            Cell { text: root.hotDisplayCell(rowText, 9); column: 10; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignHCenter }
+            Cell { text: root.hotDisplayCell(rowText, 10); column: 11; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignHCenter }
+            Cell { text: root.hotDisplayCell(rowText, 11); column: 12; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1; align: Text.AlignHCenter }
+            Cell { text: root.hotDisplayCell(rowText, 12); column: 13; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 }
+            Cell { text: root.hotDisplayCell(rowText, 13); column: 14; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 }
+            Cell { text: root.hotDisplayCell(rowText, 14); column: 15; selected: root.selectedHotRow === rowIndex; alt: rowIndex % 2 === 1 }
         }
         MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.selectedHotRow = rowIndex; setDetail(appController.language === "en" ? "Hot result" : "爆文结果", root.hotRowDetail(rowText)) } }
     }

@@ -57,11 +57,29 @@ void CoreTest::databaseStoresAndQueriesArticles() {
   article.url = QStringLiteral("https://example.com/a");
   article.readCount = 100000;
   article.likeCount = 3000;
+  article.hotScore = 77.7;
+  article.avgReadCount = 8800;
+  article.fansCount = 23000;
+  article.position = 1;
+  article.category = QStringLiteral("科技");
+  article.isOriginal = QStringLiteral("原创");
+  article.publishType = QStringLiteral("图文");
+  article.wxid = QStringLiteral("gh_db_full_001");
+  article.coverUrl = QStringLiteral("https://example.com/cover-db.jpg");
   QVERIFY(db.upsertArticle(article));
   QCOMPARE(db.articleCount(), 1);
   const auto rows = db.listArticles(QStringLiteral("爆款"));
   QCOMPARE(rows.size(), 1);
   QCOMPARE(rows.first().title, article.title);
+  QCOMPARE(rows.first().hotScore, 77.7);
+  QCOMPARE(rows.first().avgReadCount, 8800);
+  QCOMPARE(rows.first().fansCount, 23000);
+  QCOMPARE(rows.first().position, 1);
+  QCOMPARE(rows.first().category, QStringLiteral("科技"));
+  QCOMPARE(rows.first().isOriginal, QStringLiteral("原创"));
+  QCOMPARE(rows.first().publishType, QStringLiteral("图文"));
+  QCOMPARE(rows.first().wxid, QStringLiteral("gh_db_full_001"));
+  QCOMPARE(rows.first().coverUrl, QStringLiteral("https://example.com/cover-db.jpg"));
   QCOMPARE(db.totalReads(), 100000);
   QCOMPARE(db.totalLikes(), 3000);
   const auto sorted = db.listArticlesSorted(QString(), QStringLiteral("likes"), 10);
@@ -105,6 +123,7 @@ void CoreTest::exportServiceCreatesMarkdownXmlAndSpreadsheet() {
   article.avgReadCount = 100;
   article.fansCount = 1000;
   article.position = 1;
+  article.wxid = QStringLiteral("gh_test_001");
   article.category = QStringLiteral("科技");
   article.isOriginal = QStringLiteral("是");
   article.publishType = QStringLiteral("图文");
@@ -123,6 +142,9 @@ void CoreTest::exportServiceCreatesMarkdownXmlAndSpreadsheet() {
   QVERIFY(xls.contains(QStringLiteral("Workbook")));
   QVERIFY(xls.contains(QStringLiteral("标题 &lt;测试&gt;")));
   QVERIFY(xls.contains(QStringLiteral("98.5")));
+  QVERIFY(xls.contains(QStringLiteral("gh_test_001")));
+  QVERIFY(xls.contains(QStringLiteral("原创")) || xls.contains(QStringLiteral("是")));
+  QVERIFY(xls.contains(QStringLiteral("图文")));
 }
 
 void CoreTest::clientBuildsSearchPayload() {
@@ -329,6 +351,9 @@ void CoreTest::appControllerCollectsHotTypicalAndExportsMultipleFormats() {
   const auto rows = controller.hotTypicalResultRows();
   QVERIFY(!rows.isEmpty());
   QVERIFY(rows.join("\n").contains(QStringLiteral("AI")));
+  QVERIFY(rows.join("\n").contains(QStringLiteral("原创")));
+  QVERIFY(rows.join("\n").contains(QStringLiteral("图文")));
+  QVERIFY(rows.first().split(QStringLiteral("｜")).size() >= 15);
   const QString md = dir.filePath(QStringLiteral("hot.md"));
   const QString xml = dir.filePath(QStringLiteral("hot.xml"));
   const QString xls = dir.filePath(QStringLiteral("hot.xls"));

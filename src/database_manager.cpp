@@ -1,6 +1,7 @@
 #include "database_manager.h"
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QStringList>
 #include <QUuid>
 #include <QVariant>
 
@@ -20,14 +21,31 @@ bool DatabaseManager::open(const QString& database_path) {
 bool DatabaseManager::initialize() {
   QSqlQuery q(db_);
   const bool articles_ok = q.exec("CREATE TABLE IF NOT EXISTS articles (url TEXT PRIMARY KEY, title TEXT NOT NULL, author TEXT, account_name TEXT, publish_time TEXT, read_count INTEGER DEFAULT 0, like_count INTEGER DEFAULT 0, watch_count INTEGER DEFAULT 0, summary TEXT)");
+  // 旧版本只保存标题/账号/阅读等基础字段；热门内容接口文档实际还返回 hot/avg/fans/position/
+  // wxid/category/is_original/publish_type/cover。这里做幂等迁移，保证已安装用户不丢字段。
+  const QStringList article_migrations = {
+      QStringLiteral("ALTER TABLE articles ADD COLUMN hot_score REAL DEFAULT 0"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN avg_read_count INTEGER DEFAULT 0"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN fans_count INTEGER DEFAULT 0"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN position INTEGER DEFAULT 0"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN wxid TEXT"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN category TEXT"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN is_original TEXT"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN publish_type TEXT"),
+      QStringLiteral("ALTER TABLE articles ADD COLUMN cover_url TEXT")};
+  for (const auto& sql : article_migrations) {
+    QSqlQuery migration(db_);
+    migration.exec(sql);  // duplicate-column errors are expected after first run; table existence is verified by articles_ok.
+  }
   const bool tasks_ok = q.exec("CREATE TABLE IF NOT EXISTS collection_tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, keyword TEXT NOT NULL, endpoint_path TEXT NOT NULL, interval_seconds INTEGER, max_runs INTEGER, current_runs INTEGER DEFAULT 0, page_size INTEGER, enabled INTEGER DEFAULT 1)");
   const bool runs_ok = q.exec("CREATE TABLE IF NOT EXISTS collection_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id INTEGER, run_time TEXT DEFAULT CURRENT_TIMESTAMP, status TEXT, inserted_count INTEGER, message TEXT)");
   return articles_ok && tasks_ok && runs_ok;
 }
 bool DatabaseManager::upsertArticle(const Article& a) {
   QSqlQuery q(db_);
-  q.prepare("INSERT INTO articles(url,title,author,account_name,publish_time,read_count,like_count,watch_count,summary) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(url) DO UPDATE SET title=excluded.title,author=excluded.author,account_name=excluded.account_name,publish_time=excluded.publish_time,read_count=excluded.read_count,like_count=excluded.like_count,watch_count=excluded.watch_count,summary=excluded.summary");
+  q.prepare("INSERT INTO articles(url,title,author,account_name,publish_time,read_count,like_count,watch_count,summary,hot_score,avg_read_count,fans_count,position,wxid,category,is_original,publish_type,cover_url) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(url) DO UPDATE SET title=excluded.title,author=excluded.author,account_name=excluded.account_name,publish_time=excluded.publish_time,read_count=excluded.read_count,like_count=excluded.like_count,watch_count=excluded.watch_count,summary=excluded.summary,hot_score=excluded.hot_score,avg_read_count=excluded.avg_read_count,fans_count=excluded.fans_count,position=excluded.position,wxid=excluded.wxid,category=excluded.category,is_original=excluded.is_original,publish_type=excluded.publish_type,cover_url=excluded.cover_url");
   q.addBindValue(a.url); q.addBindValue(a.title); q.addBindValue(a.author); q.addBindValue(a.accountName); q.addBindValue(a.publishTime); q.addBindValue(a.readCount); q.addBindValue(a.likeCount); q.addBindValue(a.watchCount); q.addBindValue(a.summary);
+  q.addBindValue(a.hotScore); q.addBindValue(a.avgReadCount); q.addBindValue(a.fansCount); q.addBindValue(a.position); q.addBindValue(a.wxid); q.addBindValue(a.category); q.addBindValue(a.isOriginal); q.addBindValue(a.publishType); q.addBindValue(a.coverUrl);
   return q.exec();
 }
 QVector<Article> DatabaseManager::listArticles(const QString& keyword) const {
@@ -39,8 +57,10 @@ QVector<Article> DatabaseManager::listArticlesSorted(const QString& keyword, con
   QString order = QStringLiteral("read_count DESC");
   if (sort_key == QStringLiteral("likes")) order = QStringLiteral("like_count DESC");
   if (sort_key == QStringLiteral("watch")) order = QStringLiteral("watch_count DESC");
+  if (sort_key == QStringLiteral("hot")) order = QStringLiteral("hot_score DESC");
+  if (sort_key == QStringLiteral("fans")) order = QStringLiteral("fans_count DESC");
   if (sort_key == QStringLiteral("recent")) order = QStringLiteral("publish_time DESC");
-  const QString base = QStringLiteral("SELECT title,author,account_name,url,publish_time,read_count,like_count,watch_count,summary FROM articles");
+  const QString base = QStringLiteral("SELECT title,author,account_name,url,publish_time,read_count,like_count,watch_count,summary,hot_score,avg_read_count,fans_count,position,wxid,category,is_original,publish_type,cover_url FROM articles");
   if (keyword.trimmed().isEmpty()) {
     q.prepare(base + QStringLiteral(" ORDER BY ") + order + QStringLiteral(" LIMIT ?"));
     q.addBindValue(qMax(1, limit));
@@ -50,7 +70,8 @@ QVector<Article> DatabaseManager::listArticlesSorted(const QString& keyword, con
   }
   if (!q.exec()) return rows;
   while (q.next()) {
-    Article a; a.title=q.value(0).toString(); a.author=q.value(1).toString(); a.accountName=q.value(2).toString(); a.url=q.value(3).toString(); a.publishTime=q.value(4).toString(); a.readCount=q.value(5).toInt(); a.likeCount=q.value(6).toInt(); a.watchCount=q.value(7).toInt(); a.summary=q.value(8).toString(); rows.push_back(a);
+    Article a; a.title=q.value(0).toString(); a.author=q.value(1).toString(); a.accountName=q.value(2).toString(); a.url=q.value(3).toString(); a.publishTime=q.value(4).toString(); a.readCount=q.value(5).toInt(); a.likeCount=q.value(6).toInt(); a.watchCount=q.value(7).toInt(); a.summary=q.value(8).toString();
+    a.hotScore=q.value(9).toDouble(); a.avgReadCount=q.value(10).toInt(); a.fansCount=q.value(11).toInt(); a.position=q.value(12).toInt(); a.wxid=q.value(13).toString(); a.category=q.value(14).toString(); a.isOriginal=q.value(15).toString(); a.publishType=q.value(16).toString(); a.coverUrl=q.value(17).toString(); rows.push_back(a);
   }
   return rows;
 }

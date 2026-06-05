@@ -133,7 +133,7 @@ QVector<Article> ContentDataClient::mockSearchArticles(const QString& keyword, i
     a.fansCount = 100000 + i * 30000;
     a.position = i == 0 ? 1 : 2;
     a.category = QStringLiteral("科技");
-    a.isOriginal = QStringLiteral("是");
+    a.isOriginal = (i % 2 == 0) ? QStringLiteral("原创") : QStringLiteral("非原创");
     a.publishType = QStringLiteral("图文");
     a.coverUrl = QStringLiteral("mock://cover/%1").arg(i + 1);
     a.wxid = QStringLiteral("mock_wx_%1").arg(i + 1);
