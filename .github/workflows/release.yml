@@ -22,7 +22,7 @@ jobs:
             platform: linux-arm64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Qt dependencies
         run: |
@@ -67,7 +67,7 @@ jobs:
     name: Build Windows x64 package
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [linux-package, windows-x64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
