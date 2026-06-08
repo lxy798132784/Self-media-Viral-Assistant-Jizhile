@@ -83,6 +83,29 @@ struct HotTypicalCollectionPlan {
   int maxScanCandidates = 200;
 };
 
+struct HotTypicalFilterCriteria {
+  int minRead = 0;
+  int maxRead = 100000000;
+  int minLike = 0;
+  int maxLike = 100000000;
+  int minWatch = 0;
+  int maxWatch = 100000000;
+  double minHotScore = 0.0;
+  double maxHotScore = 100000000.0;
+  int minAvgRead = 0;
+  int maxAvgRead = 100000000;
+  int minFans = 0;
+  int maxFans = 100000000;
+  int minPosition = 0;
+  int maxPosition = 100000000;
+  QString titleInclude;
+  QString titleExclude;
+  QString accountInclude;
+  QString accountExclude;
+  QString originalMode = QStringLiteral("any");
+  int limit = 20;
+};
+
 /**
  * @brief 内容数据服务 客户端 / Content Data Service client
  *
@@ -245,6 +268,8 @@ class ContentDataClient : public QObject {
                                                          int max_scan_candidates) const;
   QVector<Article> filterHotTypicalArticles(const QVector<Article>& articles, int min_read, int max_read,
                                             int limit) const;
+  QVector<Article> filterHotTypicalArticles(const QVector<Article>& articles,
+                                            const HotTypicalFilterCriteria& criteria) const;
   QString hotTypicalCollectionPlanSummary(const HotTypicalCollectionPlan& plan) const;
   QString hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
                               const QString& category, int page, const QString& start_time,

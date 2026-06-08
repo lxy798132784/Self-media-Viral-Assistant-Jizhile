@@ -37,6 +37,7 @@ class CoreTest : public QObject {
   void clientBuildsEmotionRecentMonthCollectionPlan();
   void clientFiltersHotTypicalArticlesByReadWindowAndLimit();
   void clientBuildsUserControlledHotTypicalCollectionPlan();
+  void clientFiltersHotTypicalArticlesByAdvancedMetricsAndText();
 };
 
 void CoreTest::apiCatalogLoadsLocalIndex() {
@@ -572,6 +573,72 @@ void CoreTest::clientBuildsUserControlledHotTypicalCollectionPlan() {
   QVERIFY(summary.contains(QStringLiteral("财经,股票,AI,科技,情感")));
   QVERIFY(summary.contains(QStringLiteral("10000")));
   QVERIFY(summary.contains(QStringLiteral("80000")));
+}
+
+void CoreTest::clientFiltersHotTypicalArticlesByAdvancedMetricsAndText() {
+  ContentDataClient client;
+  HotTypicalFilterCriteria criteria;
+  criteria.minRead = 30000;
+  criteria.maxRead = 50000;
+  criteria.minLike = 1000;
+  criteria.maxLike = 3000;
+  criteria.minWatch = 100;
+  criteria.maxWatch = 900;
+  criteria.minHotScore = 60.0;
+  criteria.maxHotScore = 95.0;
+  criteria.minAvgRead = 20000;
+  criteria.maxAvgRead = 60000;
+  criteria.minFans = 100000;
+  criteria.maxFans = 500000;
+  criteria.minPosition = 1;
+  criteria.maxPosition = 10;
+  criteria.titleInclude = QStringLiteral("情感");
+  criteria.titleExclude = QStringLiteral("广告");
+  criteria.accountInclude = QStringLiteral("故事");
+  criteria.accountExclude = QStringLiteral("营销");
+  criteria.originalMode = QStringLiteral("original");
+  criteria.limit = 2;
+
+  Article good;
+  good.title = QStringLiteral("情感修复真实故事");
+  good.accountName = QStringLiteral("故事研究所");
+  good.url = QStringLiteral("https://example.com/good");
+  good.readCount = 40000;
+  good.likeCount = 1800;
+  good.watchCount = 300;
+  good.hotScore = 80.0;
+  good.avgReadCount = 30000;
+  good.fansCount = 200000;
+  good.position = 3;
+  good.isOriginal = QStringLiteral("原创");
+
+  QVector<Article> input{good};
+  Article badLike = good;
+  badLike.url = QStringLiteral("https://example.com/bad-like");
+  badLike.likeCount = 999;
+  input.push_back(badLike);
+  Article badTitle = good;
+  badTitle.url = QStringLiteral("https://example.com/bad-title");
+  badTitle.title = QStringLiteral("情感广告合集");
+  input.push_back(badTitle);
+  Article badAccount = good;
+  badAccount.url = QStringLiteral("https://example.com/bad-account");
+  badAccount.accountName = QStringLiteral("营销故事号");
+  input.push_back(badAccount);
+  Article badOriginal = good;
+  badOriginal.url = QStringLiteral("https://example.com/bad-original");
+  badOriginal.isOriginal = QStringLiteral("转载");
+  input.push_back(badOriginal);
+  Article good2 = good;
+  good2.url = QStringLiteral("https://example.com/good2");
+  good2.readCount = 45000;
+  input.push_back(good2);
+  input.push_back(good);
+
+  const auto filtered = client.filterHotTypicalArticles(input, criteria);
+  QCOMPARE(filtered.size(), 2);
+  QCOMPARE(filtered.at(0).url, QStringLiteral("https://example.com/good"));
+  QCOMPARE(filtered.at(1).url, QStringLiteral("https://example.com/good2"));
 }
 
 QTEST_MAIN(CoreTest)

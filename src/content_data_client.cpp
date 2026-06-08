@@ -428,15 +428,65 @@ HotTypicalCollectionPlan ContentDataClient::buildHotTypicalCollectionPlan(const 
   return plan;
 }
 
+namespace {
+bool containsText(const QString& haystack, const QString& needle) {
+  return needle.trimmed().isEmpty() || haystack.contains(needle.trimmed(), Qt::CaseInsensitive);
+}
+
+bool excludesText(const QString& haystack, const QString& needle) {
+  return needle.trimmed().isEmpty() || !haystack.contains(needle.trimmed(), Qt::CaseInsensitive);
+}
+
+bool matchesOriginalMode(const QString& value, const QString& mode) {
+  const QString normalizedMode = mode.trimmed().toLower();
+  if (normalizedMode.isEmpty() || normalizedMode == QStringLiteral("any")) return true;
+  const QString normalizedValue = value.trimmed().toLower();
+  const bool isOriginal = normalizedValue.contains(QStringLiteral("原创")) || normalizedValue == QStringLiteral("original") || normalizedValue == QStringLiteral("true") || normalizedValue == QStringLiteral("1") || normalizedValue == QStringLiteral("是");
+  if (normalizedMode == QStringLiteral("original")) return isOriginal;
+  if (normalizedMode == QStringLiteral("non_original") || normalizedMode == QStringLiteral("repost")) return !isOriginal;
+  return true;
+}
+}
+
 QVector<Article> ContentDataClient::filterHotTypicalArticles(const QVector<Article>& articles, int min_read,
                                                              int max_read, int limit) const {
+  HotTypicalFilterCriteria criteria;
+  criteria.minRead = min_read;
+  criteria.maxRead = max_read;
+  criteria.limit = limit;
+  return filterHotTypicalArticles(articles, criteria);
+}
+
+QVector<Article> ContentDataClient::filterHotTypicalArticles(const QVector<Article>& articles,
+                                                             const HotTypicalFilterCriteria& criteria) const {
   QVector<Article> accepted;
   QSet<QString> seen_urls;
-  const int safe_min = qMax(0, min_read);
-  const int safe_max = qMax(safe_min, max_read);
-  const int safe_limit = qMax(1, limit);
+  const int safe_min_read = qMax(0, criteria.minRead);
+  const int safe_max_read = qMax(safe_min_read, criteria.maxRead);
+  const int safe_min_like = qMax(0, criteria.minLike);
+  const int safe_max_like = qMax(safe_min_like, criteria.maxLike);
+  const int safe_min_watch = qMax(0, criteria.minWatch);
+  const int safe_max_watch = qMax(safe_min_watch, criteria.maxWatch);
+  const double safe_min_score = qMax(0.0, criteria.minHotScore);
+  const double safe_max_score = qMax(safe_min_score, criteria.maxHotScore);
+  const int safe_min_avg = qMax(0, criteria.minAvgRead);
+  const int safe_max_avg = qMax(safe_min_avg, criteria.maxAvgRead);
+  const int safe_min_fans = qMax(0, criteria.minFans);
+  const int safe_max_fans = qMax(safe_min_fans, criteria.maxFans);
+  const int safe_min_pos = qMax(0, criteria.minPosition);
+  const int safe_max_pos = qMax(safe_min_pos, criteria.maxPosition);
+  const int safe_limit = qMax(1, criteria.limit);
   for (const auto& article : articles) {
-    if (article.readCount < safe_min || article.readCount > safe_max) continue;
+    if (article.readCount < safe_min_read || article.readCount > safe_max_read) continue;
+    if (article.likeCount < safe_min_like || article.likeCount > safe_max_like) continue;
+    if (article.watchCount < safe_min_watch || article.watchCount > safe_max_watch) continue;
+    if (article.hotScore < safe_min_score || article.hotScore > safe_max_score) continue;
+    if (article.avgReadCount < safe_min_avg || article.avgReadCount > safe_max_avg) continue;
+    if (article.fansCount < safe_min_fans || article.fansCount > safe_max_fans) continue;
+    if (article.position < safe_min_pos || article.position > safe_max_pos) continue;
+    if (!containsText(article.title, criteria.titleInclude) || !excludesText(article.title, criteria.titleExclude)) continue;
+    if (!containsText(article.accountName, criteria.accountInclude) || !excludesText(article.accountName, criteria.accountExclude)) continue;
+    if (!matchesOriginalMode(article.isOriginal, criteria.originalMode)) continue;
     const QString key = article.url.trimmed().isEmpty() ? article.title.trimmed() : article.url.trimmed();
     if (!key.isEmpty() && seen_urls.contains(key)) continue;
     if (!key.isEmpty()) seen_urls.insert(key);

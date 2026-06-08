@@ -569,11 +569,66 @@ QString AppController::targetedHotTypicalCollectionPreview(const QString& keywor
   return client_.hotTypicalCollectionPlanSummary(plan);
 }
 
+QString AppController::targetedHotTypicalAdvancedPreview(const QString& keywords, const QString& pubType,
+                                                         const QString& category, const QString& startTime,
+                                                         const QString& endTime, int minRead, int maxRead,
+                                                         int minLike, int maxLike, int minWatch, int maxWatch,
+                                                         double minHotScore, double maxHotScore,
+                                                         int minAvgRead, int maxAvgRead, int minFans, int maxFans,
+                                                         int minPosition, int maxPosition, const QString& titleInclude,
+                                                         const QString& titleExclude, const QString& accountInclude,
+                                                         const QString& accountExclude, const QString& originalMode,
+                                                         int targetCount, int maxPagesPerKeyword,
+                                                         int maxScanCandidates) const {
+  const auto plan = client_.buildHotTypicalCollectionPlan(keywords, pubType, category, startTime, endTime, minRead,
+                                                          maxRead, targetCount, maxPagesPerKeyword, maxScanCandidates);
+  QJsonDocument doc = QJsonDocument::fromJson(client_.hotTypicalCollectionPlanSummary(plan).toUtf8());
+  QJsonObject root = doc.object();
+  root["min_like"] = minLike;
+  root["max_like"] = maxLike;
+  root["min_watch"] = minWatch;
+  root["max_watch"] = maxWatch;
+  root["min_hot_score"] = minHotScore;
+  root["max_hot_score"] = maxHotScore;
+  root["min_avg_read"] = minAvgRead;
+  root["max_avg_read"] = maxAvgRead;
+  root["min_fans"] = minFans;
+  root["max_fans"] = maxFans;
+  root["min_position"] = minPosition;
+  root["max_position"] = maxPosition;
+  root["title_include"] = titleInclude;
+  root["title_exclude"] = titleExclude;
+  root["account_include"] = accountInclude;
+  root["account_exclude"] = accountExclude;
+  root["original_mode"] = originalMode;
+  root["local_filters"] = QStringLiteral("read/like/watch/hot_score/avg_read/fans/position/title/account/original");
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
 int AppController::runTargetedHotTypicalCollection(const QString& apiKey, const QString& keywords,
                                                    const QString& pubType, const QString& category,
                                                    const QString& startTime, const QString& endTime,
                                                    int minRead, int maxRead, int targetCount,
                                                    int maxPagesPerKeyword, int maxScanCandidates) {
+  return runTargetedHotTypicalAdvancedCollection(apiKey, keywords, pubType, category, startTime, endTime,
+                                                 minRead, maxRead, 0, 100000000, 0, 100000000,
+                                                 0.0, 100000000.0, 0, 100000000, 0, 100000000,
+                                                 0, 100000000, QString(), QString(), QString(), QString(),
+                                                 QStringLiteral("any"), targetCount, maxPagesPerKeyword,
+                                                 maxScanCandidates);
+}
+
+int AppController::runTargetedHotTypicalAdvancedCollection(const QString& apiKey, const QString& keywords,
+                                                           const QString& pubType, const QString& category,
+                                                           const QString& startTime, const QString& endTime,
+                                                           int minRead, int maxRead, int minLike, int maxLike,
+                                                           int minWatch, int maxWatch, double minHotScore,
+                                                           double maxHotScore, int minAvgRead, int maxAvgRead,
+                                                           int minFans, int maxFans, int minPosition, int maxPosition,
+                                                           const QString& titleInclude, const QString& titleExclude,
+                                                           const QString& accountInclude, const QString& accountExclude,
+                                                           const QString& originalMode, int targetCount,
+                                                           int maxPagesPerKeyword, int maxScanCandidates) {
   const auto plan = client_.buildHotTypicalCollectionPlan(keywords, pubType, category, startTime, endTime, minRead,
                                                           maxRead, targetCount, maxPagesPerKeyword, maxScanCandidates);
   const QString key = apiKey.trimmed().isEmpty() ? config_.apiKey() : apiKey.trimmed();
@@ -612,8 +667,28 @@ int AppController::runTargetedHotTypicalCollection(const QString& apiKey, const 
       }
 
       ++scanned;
-      const auto filtered = client_.filterHotTypicalArticles(response.articles, plan.minRead, plan.maxRead,
-                                                            plan.targetCount - accepted.size());
+      HotTypicalFilterCriteria criteria;
+      criteria.minRead = plan.minRead;
+      criteria.maxRead = plan.maxRead;
+      criteria.minLike = minLike;
+      criteria.maxLike = maxLike;
+      criteria.minWatch = minWatch;
+      criteria.maxWatch = maxWatch;
+      criteria.minHotScore = minHotScore;
+      criteria.maxHotScore = maxHotScore;
+      criteria.minAvgRead = minAvgRead;
+      criteria.maxAvgRead = maxAvgRead;
+      criteria.minFans = minFans;
+      criteria.maxFans = maxFans;
+      criteria.minPosition = minPosition;
+      criteria.maxPosition = maxPosition;
+      criteria.titleInclude = titleInclude;
+      criteria.titleExclude = titleExclude;
+      criteria.accountInclude = accountInclude;
+      criteria.accountExclude = accountExclude;
+      criteria.originalMode = originalMode;
+      criteria.limit = plan.targetCount - accepted.size();
+      const auto filtered = client_.filterHotTypicalArticles(response.articles, criteria);
       for (const auto& article : filtered) {
         const QString id = article.url.trimmed().isEmpty() ? article.title.trimmed() : article.url.trimmed();
         if (!id.isEmpty() && seen.contains(id)) continue;

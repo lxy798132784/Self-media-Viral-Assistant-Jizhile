@@ -104,11 +104,33 @@ class AppController : public QObject {
                                                           const QString& endTime, int minRead, int maxRead,
                                                           int targetCount, int maxPagesPerKeyword,
                                                           int maxScanCandidates) const;
+  Q_INVOKABLE QString targetedHotTypicalAdvancedPreview(const QString& keywords, const QString& pubType,
+                                                        const QString& category, const QString& startTime,
+                                                        const QString& endTime, int minRead, int maxRead,
+                                                        int minLike, int maxLike, int minWatch, int maxWatch,
+                                                        double minHotScore, double maxHotScore,
+                                                        int minAvgRead, int maxAvgRead, int minFans, int maxFans,
+                                                        int minPosition, int maxPosition, const QString& titleInclude,
+                                                        const QString& titleExclude, const QString& accountInclude,
+                                                        const QString& accountExclude, const QString& originalMode,
+                                                        int targetCount, int maxPagesPerKeyword,
+                                                        int maxScanCandidates) const;
   Q_INVOKABLE int runTargetedHotTypicalCollection(const QString& apiKey, const QString& keywords,
                                                   const QString& pubType, const QString& category,
                                                   const QString& startTime, const QString& endTime,
                                                   int minRead, int maxRead, int targetCount,
                                                   int maxPagesPerKeyword, int maxScanCandidates);
+  Q_INVOKABLE int runTargetedHotTypicalAdvancedCollection(const QString& apiKey, const QString& keywords,
+                                                          const QString& pubType, const QString& category,
+                                                          const QString& startTime, const QString& endTime,
+                                                          int minRead, int maxRead, int minLike, int maxLike,
+                                                          int minWatch, int maxWatch, double minHotScore,
+                                                          double maxHotScore, int minAvgRead, int maxAvgRead,
+                                                          int minFans, int maxFans, int minPosition, int maxPosition,
+                                                          const QString& titleInclude, const QString& titleExclude,
+                                                          const QString& accountInclude, const QString& accountExclude,
+                                                          const QString& originalMode, int targetCount,
+                                                          int maxPagesPerKeyword, int maxScanCandidates);
   Q_INVOKABLE bool exportReport(const QString& path);
   Q_INVOKABLE QStringList taskRows() const;
   Q_INVOKABLE QStringList runRows() const;

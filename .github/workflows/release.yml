@@ -10,9 +10,17 @@ permissions:
   contents: write
 
 jobs:
-  linux-amd64:
-    name: Build Linux amd64 package
-    runs-on: ubuntu-24.04
+  linux-package:
+    name: Build Linux ${{ matrix.platform }} package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux-amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
-          ASSET_ROOT="media-hit-assistant-${VERSION}-linux-amd64"
+          ASSET_ROOT="media-hit-assistant-${VERSION}-${{ matrix.platform }}"
           rm -rf release-out "$ASSET_ROOT"
           cmake --install build --prefix "$PWD/$ASSET_ROOT/usr"
           test -x "$ASSET_ROOT/usr/bin/media-hit-assistant"
@@ -51,7 +59,7 @@ jobs:
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-amd64-asset
+          name: ${{ matrix.platform }}-asset
           path: release-out/*
           if-no-files-found: error
 
@@ -93,7 +101,7 @@ jobs:
   publish:
     name: Publish GitHub Release
     runs-on: ubuntu-24.04
-    needs: [linux-amd64, windows-x64]
+    needs: [linux-package, windows-x64]
     steps:
       - uses: actions/checkout@v4
 
@@ -118,6 +126,7 @@ jobs:
 
           ## Assets
           - Linux amd64 installed-tree archive.
+          - Linux arm64 installed-tree archive.
           - Windows x64 zip package built on windows-2022 with Qt deployment when available.
           - Source archives generated from the exact release commit.
           - Documentation bundle and SHA256SUMS.
