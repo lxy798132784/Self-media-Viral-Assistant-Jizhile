@@ -8,6 +8,7 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QStandardPaths>
+#include <QSet>
 #include <QThread>
 
 AppController::AppController(QObject* parent) : QObject(parent) {}
@@ -544,6 +545,88 @@ QString AppController::hotTypicalSmokePreview(const QString& apiKey, const QStri
                                               const QString& category, int page, const QString& startTime,
                                               const QString& endTime) const {
   return client_.hotTypicalSmokePlan(apiKey, keyword, pubType, category, page, startTime, endTime);
+}
+
+QString AppController::emotionRecentMonthCollectionPreview(int minRead, int maxRead, int targetCount) const {
+  const auto plan = client_.buildEmotionRecentMonthCollectionPlan(QDate::currentDate(), minRead, maxRead, targetCount);
+  return client_.hotTypicalCollectionPlanSummary(plan);
+}
+
+int AppController::runEmotionRecentMonthCollection(const QString& apiKey, int minRead, int maxRead, int targetCount) {
+  const auto plan = client_.buildEmotionRecentMonthCollectionPlan(QDate::currentDate(), minRead, maxRead, targetCount);
+  const QString key = apiKey.trimmed().isEmpty() ? config_.apiKey() : apiKey.trimmed();
+  QVector<Article> accepted;
+  QSet<QString> seen;
+  int scanned = 0;
+  double total_cost = 0.0;
+  double remain_money = 0.0;
+  QStringList notes;
+  HotTypicalStatus final_status = HotTypicalStatus::RealEmpty;
+
+  for (const QString& keyword : plan.keywords) {
+    if (accepted.size() >= plan.targetCount || scanned >= plan.maxScanCandidates) break;
+    for (int page = 1; page <= plan.maxPagesPerKeyword; ++page) {
+      if (accepted.size() >= plan.targetCount || scanned >= plan.maxScanCandidates) break;
+      const HotTypicalResponse response = client_.fetchHotTypical(QString(), key, keyword, plan.pubType, plan.category,
+                                                                  page, plan.startTime, plan.endTime);
+      final_status = response.status;
+      total_cost += response.cost;
+      remain_money = response.remain_money;
+      notes << QStringLiteral("keyword=%1 page=%2 status=%3 rows=%4 cost=%5 msg=%6")
+                   .arg(keyword).arg(page).arg(static_cast<int>(response.status)).arg(response.articles.size())
+                   .arg(response.cost, 0, 'f', 2).arg(response.msg);
+
+      if (response.status == HotTypicalStatus::ApiError || response.status == HotTypicalStatus::NetworkError ||
+          response.status == HotTypicalStatus::ValidationError) {
+        hot_typical_response_ = response;
+        hot_typical_results_ = accepted;
+        database_.recordCollectionRun(0, QStringLiteral("emotion_collection_error"), accepted.size(),
+                                      client_.hotTypicalCollectionPlanSummary(plan).left(300) + QStringLiteral(" ") + notes.join(QStringLiteral(" | ")).left(900));
+        setStatus(QStringLiteral("情感定向采集停止：接口/网络/参数错误，已保留 %1 条合格结果；%2")
+                      .arg(accepted.size()).arg(response.msg.isEmpty() ? response.error_text : response.msg));
+        emit hotResultChanged();
+        emit dataChanged();
+        return accepted.size();
+      }
+
+      ++scanned;
+      const auto filtered = client_.filterHotTypicalArticles(response.articles, plan.minRead, plan.maxRead,
+                                                            plan.targetCount - accepted.size());
+      for (const auto& article : filtered) {
+        const QString id = article.url.trimmed().isEmpty() ? article.title.trimmed() : article.url.trimmed();
+        if (!id.isEmpty() && seen.contains(id)) continue;
+        if (!id.isEmpty()) seen.insert(id);
+        accepted.push_back(article);
+        if (accepted.size() >= plan.targetCount) break;
+      }
+    }
+  }
+
+  hot_typical_results_ = accepted;
+  hot_typical_response_ = HotTypicalResponse{};
+  hot_typical_response_.status = accepted.isEmpty() ? final_status : (key.trimmed().isEmpty() ? HotTypicalStatus::SampleFallback : HotTypicalStatus::RealData);
+  hot_typical_response_.code = 0;
+  hot_typical_response_.msg = QStringLiteral("情感定向采集完成：目标%1，合格%2，扫描请求%3").arg(plan.targetCount).arg(accepted.size()).arg(scanned);
+  hot_typical_response_.note = QStringLiteral("接口筛选 category=8/pub_type=0/time/keyword，本地过滤 read_num=%1..%2；%3")
+                                   .arg(plan.minRead).arg(plan.maxRead).arg(notes.join(QStringLiteral(" | ")).left(1200));
+  hot_typical_response_.cost = total_cost;
+  hot_typical_response_.remain_money = remain_money;
+  hot_typical_response_.total = accepted.size();
+  hot_typical_response_.total_page = scanned;
+
+  int inserted = 0;
+  for (const auto& article : accepted) {
+    if (database_.upsertArticle(article)) ++inserted;
+  }
+  const QString run_status = accepted.size() >= plan.targetCount ? QStringLiteral("emotion_collection_target_met")
+                                                                 : QStringLiteral("emotion_collection_partial");
+  database_.recordCollectionRun(0, run_status, inserted,
+                                client_.hotTypicalCollectionPlanSummary(plan).left(300) + QStringLiteral(" ") + hot_typical_response_.note.left(900));
+  setStatus(QStringLiteral("情感定向采集完成：入库 %1 条，合格 %2/%3，扫描请求 %4，花费 ¥%5")
+                .arg(inserted).arg(accepted.size()).arg(plan.targetCount).arg(scanned).arg(total_cost, 0, 'f', 2));
+  emit hotResultChanged();
+  emit dataChanged();
+  return inserted;
 }
 
 bool AppController::exportReport(const QString& path) {

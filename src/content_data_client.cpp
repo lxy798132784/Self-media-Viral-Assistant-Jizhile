@@ -9,6 +9,7 @@
 #include <QHttpPart>
 #include <QUrlQuery>
 #include <QRegularExpression>
+#include <QSet>
 #include <QTimer>
 
 ContentDataClient::ContentDataClient(QObject* parent) : QObject(parent) {}
@@ -387,6 +388,65 @@ QString ContentDataClient::classifyApiError(int status_code, const QString& erro
   if (status_code >= 500) return QStringLiteral("server_error");
   return QStringLiteral("unknown_error");
 }
+
+HotTypicalCollectionPlan ContentDataClient::buildEmotionRecentMonthCollectionPlan(const QDate& today, int min_read,
+                                                                                  int max_read,
+                                                                                  int target_count) const {
+  HotTypicalCollectionPlan plan;
+  const QDate safe_today = today.isValid() ? today : QDate::currentDate();
+  plan.startTime = safe_today.addMonths(-1).toString(Qt::ISODate);
+  plan.endTime = safe_today.toString(Qt::ISODate);
+  plan.minRead = qMax(0, min_read);
+  plan.maxRead = qMax(plan.minRead, max_read);
+  plan.targetCount = qMax(1, target_count);
+  plan.category = QStringLiteral("8");
+  plan.pubType = QStringLiteral("0");
+  plan.maxPagesPerKeyword = 3;
+  plan.maxScanCandidates = qMax(plan.targetCount * 10, 200);
+  plan.keywords = {QStringLiteral("情感"), QStringLiteral("婚姻"), QStringLiteral("恋爱"),
+                   QStringLiteral("分手"), QStringLiteral("复合"), QStringLiteral("夫妻"),
+                   QStringLiteral("婆媳"), QStringLiteral("前任"), QStringLiteral("失恋"),
+                   QStringLiteral("两性"), QStringLiteral("亲密关系"), QStringLiteral("原生家庭"),
+                   QStringLiteral("爱情"), QStringLiteral("婚恋"), QStringLiteral("离婚")};
+  return plan;
+}
+
+QVector<Article> ContentDataClient::filterHotTypicalArticles(const QVector<Article>& articles, int min_read,
+                                                             int max_read, int limit) const {
+  QVector<Article> accepted;
+  QSet<QString> seen_urls;
+  const int safe_min = qMax(0, min_read);
+  const int safe_max = qMax(safe_min, max_read);
+  const int safe_limit = qMax(1, limit);
+  for (const auto& article : articles) {
+    if (article.readCount < safe_min || article.readCount > safe_max) continue;
+    const QString key = article.url.trimmed().isEmpty() ? article.title.trimmed() : article.url.trimmed();
+    if (!key.isEmpty() && seen_urls.contains(key)) continue;
+    if (!key.isEmpty()) seen_urls.insert(key);
+    accepted.push_back(article);
+    if (accepted.size() >= safe_limit) break;
+  }
+  return accepted;
+}
+
+QString ContentDataClient::hotTypicalCollectionPlanSummary(const HotTypicalCollectionPlan& plan) const {
+  QJsonObject root;
+  root["endpoint"] = QStringLiteral("/fbmain/monitor/v3/hot_typical_search");
+  root["category"] = plan.category;
+  root["category_hint"] = QStringLiteral("category=8 emotion");
+  root["pub_type"] = plan.pubType;
+  root["start_time"] = plan.startTime;
+  root["end_time"] = plan.endTime;
+  root["min_read"] = plan.minRead;
+  root["max_read"] = plan.maxRead;
+  root["target_count"] = plan.targetCount;
+  root["max_pages_per_keyword"] = plan.maxPagesPerKeyword;
+  root["max_scan_candidates"] = plan.maxScanCandidates;
+  root["keywords"] = plan.keywords.join(QStringLiteral(","));
+  root["read_filter"] = QStringLiteral("%1..%2").arg(plan.minRead).arg(plan.maxRead);
+  return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact));
+}
+
 QString ContentDataClient::hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
                                             const QString& category, int page, const QString& start_time,
                                             const QString& end_time) const {

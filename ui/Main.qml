@@ -156,7 +156,7 @@ ApplicationWindow {
         var zh = {
             dashboard: "查看内容数量、阅读点赞汇总和最近操作状态，适合快速确认当前数据情况。",
             library: "搜索本地内容库，查看文章详情并导出结果。列表区域可独立滚动。",
-            hot: "设置关键词、类型、分类、页码和日期范围后采集真实爆文数据。",
+            hot: "设置关键词、类型、分类、页码和日期范围后采集真实爆文数据；也可一键执行情感类最近30天、阅读3万-5万、目标20篇的定向采集。",
             results: "按标题、账号、时间和完整 API 字段查看解析结果：爆值、阅读、点赞、均读、粉丝、分类、发文位置、是否原创、爆文类型、微信ID、封面和链接。表格支持横向滚动、纵向滚动、选中行查看详情，并可拖动表头分隔线调整列宽。",
             report: "查看可复制、可导出的内容拆解摘要。",
             topics: "查看选题建议，点击卡片可预览后续处理内容。",
@@ -320,6 +320,7 @@ ApplicationWindow {
                         RowLayout { Layout.fillWidth: true; spacing: 10
                             AppButton { text: root.t("preview_payload"); ToolTip.visible: hovered; ToolTip.text: "预览请求参数"; onClicked: payloadPreview.text = appController.hotTypicalPayloadPreview(hotKey.text, hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text) }
                             AppButton { text: appController.language === "en" ? "Collect and parse" : "采集并解析"; highlighted: true; ToolTip.visible: hovered; ToolTip.text: "采集后打开结果表"; onClicked: { appController.runHotTypicalCollection(hotKey.text, hotKeyword.text, hotPubType.currentValue, hotCategory.currentValue, hotPage.value, hotStart.text, hotEnd.text); refreshHotRows(); stack.currentIndex = 3 } }
+                            AppButton { text: appController.language === "en" ? "Emotion 30d 30k-50k ×20" : "情感30天3-5万×20"; ToolTip.visible: hovered; ToolTip.text: appController.language === "en" ? "Category=8, last 30 days, local read filter 30000-50000, target 20" : "分类=情感，最近30天，本地筛阅读3万-5万，目标20篇"; onClicked: { payloadPreview.text = appController.emotionRecentMonthCollectionPreview(30000, 50000, 20); appController.runEmotionRecentMonthCollection(hotKey.text, 30000, 50000, 20); refreshHotRows(); stack.currentIndex = 3 } }
                             AppButton { text: appController.language === "en" ? "Open result table" : "打开结果表"; ToolTip.visible: hovered; ToolTip.text: "打开结果表页面"; onClicked: { refreshHotRows(); stack.currentIndex = 3 } }
                         }
                     }

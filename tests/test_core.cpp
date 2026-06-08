@@ -34,6 +34,8 @@ class CoreTest : public QObject {
   void appControllerExposesDatePickersAndAiExtensionSlot();
   void appControllerExposesEndpointAndPluginRows();
   void appControllerClosesInteractiveDetailsAndExports();
+  void clientBuildsEmotionRecentMonthCollectionPlan();
+  void clientFiltersHotTypicalArticlesByReadWindowAndLimit();
 };
 
 void CoreTest::apiCatalogLoadsLocalIndex() {
@@ -476,12 +478,77 @@ void CoreTest::appControllerClosesInteractiveDetailsAndExports() {
   const QString run_row = controller.runRows().value(0);
   QVERIFY(controller.runDetail(run_row).contains(QStringLiteral("Run receipt")) || controller.runDetail(run_row).contains(QStringLiteral("运行记录")));
   QVERIFY(controller.hotTypicalSmokePreview(QStringLiteral("[configured]"), QStringLiteral("AI"), QStringLiteral("0"), QStringLiteral("0"), 1, QStringLiteral("2026-05-01"), QStringLiteral("2026-05-02")).contains(QStringLiteral("preview_only")));
+  const QString emotion_preview = controller.emotionRecentMonthCollectionPreview(30000, 50000, 20);
+  QVERIFY(emotion_preview.contains(QStringLiteral("category=8")));
+  QVERIFY(emotion_preview.contains(QStringLiteral("30000")));
+  QVERIFY(controller.runEmotionRecentMonthCollection(QString(), 30000, 50000, 20) >= 0);
+  QVERIFY(controller.hotNote().contains(QStringLiteral("read_num=30000..50000")) || controller.hotResultCount() == 0);
   const QString report_path = dir.filePath(QStringLiteral("report.md"));
   QVERIFY(controller.exportReport(report_path));
   QVERIFY(QFile::exists(report_path));
   QFile report(report_path);
   QVERIFY(report.open(QIODevice::ReadOnly | QIODevice::Text));
   QVERIFY(QString::fromUtf8(report.readAll()).contains(QStringLiteral("爆款评分")));
+}
+
+void CoreTest::clientBuildsEmotionRecentMonthCollectionPlan() {
+  ContentDataClient client;
+  const auto plan = client.buildEmotionRecentMonthCollectionPlan(QDate(2026, 6, 8), 30000, 50000, 20);
+  QCOMPARE(plan.targetCount, 20);
+  QCOMPARE(plan.minRead, 30000);
+  QCOMPARE(plan.maxRead, 50000);
+  QCOMPARE(plan.category, QStringLiteral("8"));
+  QCOMPARE(plan.pubType, QStringLiteral("0"));
+  QCOMPARE(plan.startTime, QStringLiteral("2026-05-08"));
+  QCOMPARE(plan.endTime, QStringLiteral("2026-06-08"));
+  QVERIFY(plan.keywords.contains(QStringLiteral("情感")));
+  QVERIFY(plan.keywords.contains(QStringLiteral("婚姻")));
+  QVERIFY(plan.keywords.contains(QStringLiteral("亲密关系")));
+  QVERIFY(plan.maxScanCandidates >= 20);
+  QVERIFY(plan.maxPagesPerKeyword >= 1);
+  const QString summary = client.hotTypicalCollectionPlanSummary(plan);
+  QVERIFY(summary.contains(QStringLiteral("30000")));
+  QVERIFY(summary.contains(QStringLiteral("50000")));
+  QVERIFY(summary.contains(QStringLiteral("category=8")));
+  QVERIFY(summary.contains(QStringLiteral("2026-05-08")));
+}
+
+void CoreTest::clientFiltersHotTypicalArticlesByReadWindowAndLimit() {
+  ContentDataClient client;
+  QVector<Article> input;
+  for (int i = 0; i < 25; ++i) {
+    Article a;
+    a.title = QStringLiteral("情感样本 %1").arg(i + 1);
+    a.url = QStringLiteral("https://example.com/emotion/%1").arg(i + 1);
+    a.category = i % 2 == 0 ? QStringLiteral("情感") : QStringLiteral("科技");
+    a.publishTime = QStringLiteral("2026-05-%1").arg(QString::number(10 + (i % 10)).rightJustified(2, QLatin1Char('0')));
+    a.readCount = 30000 + i * 1000;
+    input.push_back(a);
+  }
+  Article low;
+  low.title = QStringLiteral("低阅读");
+  low.url = QStringLiteral("https://example.com/low");
+  low.readCount = 29999;
+  input.push_back(low);
+  Article high;
+  high.title = QStringLiteral("高阅读");
+  high.url = QStringLiteral("https://example.com/high");
+  high.readCount = 50001;
+  input.push_back(high);
+  Article duplicate = input.first();
+  input.push_back(duplicate);
+
+  const auto filtered = client.filterHotTypicalArticles(input, 30000, 50000, 20);
+  QCOMPARE(filtered.size(), 20);
+  QSet<QString> urls;
+  for (const auto& a : filtered) {
+    QVERIFY(a.readCount >= 30000);
+    QVERIFY(a.readCount <= 50000);
+    QVERIFY(!urls.contains(a.url));
+    urls.insert(a.url);
+  }
+  QCOMPARE(filtered.first().readCount, 30000);
+  QCOMPARE(filtered.last().readCount, 49000);
 }
 
 QTEST_MAIN(CoreTest)

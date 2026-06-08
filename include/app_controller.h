@@ -97,6 +97,8 @@ class AppController : public QObject {
   Q_INVOKABLE QString hotTypicalSmokePreview(const QString& apiKey, const QString& keyword, const QString& pubType,
                                              const QString& category, int page, const QString& startTime,
                                              const QString& endTime) const;
+  Q_INVOKABLE QString emotionRecentMonthCollectionPreview(int minRead, int maxRead, int targetCount) const;
+  Q_INVOKABLE int runEmotionRecentMonthCollection(const QString& apiKey, int minRead, int maxRead, int targetCount);
   Q_INVOKABLE bool exportReport(const QString& path);
   Q_INVOKABLE QStringList taskRows() const;
   Q_INVOKABLE QStringList runRows() const;

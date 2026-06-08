@@ -66,6 +66,24 @@ struct HotTypicalResponse {
 };
 
 /**
+ * @brief 情感近30天定向采集计划 / Focused recent-month emotion collection plan.
+ * @details 用于把“阅读3万到5万、最近一个月、情感相关、采20篇”固化为可测试、可审计的参数集合。
+ *          Turns the user-facing collection request into a testable/auditable parameter set.
+ */
+struct HotTypicalCollectionPlan {
+  QStringList keywords;
+  QString pubType = QStringLiteral("0");
+  QString category = QStringLiteral("8");
+  QString startTime;
+  QString endTime;
+  int minRead = 30000;
+  int maxRead = 50000;
+  int targetCount = 20;
+  int maxPagesPerKeyword = 3;
+  int maxScanCandidates = 200;
+};
+
+/**
  * @brief 内容数据服务 客户端 / Content Data Service client
  *
  * @details 构造请求体、执行同步 HTTP POST、解析文章响应，并在未配置密钥时进入安全示例采集。
@@ -217,6 +235,12 @@ class ContentDataClient : public QObject {
   bool isRetryableStatus(int status_code) const;
   int retryDelayMs(int attempt) const;
   QString classifyApiError(int status_code, const QString& error_text) const;
+  HotTypicalCollectionPlan buildEmotionRecentMonthCollectionPlan(const QDate& today, int min_read = 30000,
+                                                                 int max_read = 50000,
+                                                                 int target_count = 20) const;
+  QVector<Article> filterHotTypicalArticles(const QVector<Article>& articles, int min_read, int max_read,
+                                            int limit) const;
+  QString hotTypicalCollectionPlanSummary(const HotTypicalCollectionPlan& plan) const;
   QString hotTypicalSmokePlan(const QString& apiKey, const QString& keyword, const QString& pubType,
                               const QString& category, int page, const QString& start_time,
                               const QString& end_time) const;
