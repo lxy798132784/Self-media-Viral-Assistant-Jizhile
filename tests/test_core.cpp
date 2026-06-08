@@ -36,6 +36,7 @@ class CoreTest : public QObject {
   void appControllerClosesInteractiveDetailsAndExports();
   void clientBuildsEmotionRecentMonthCollectionPlan();
   void clientFiltersHotTypicalArticlesByReadWindowAndLimit();
+  void clientBuildsUserControlledHotTypicalCollectionPlan();
 };
 
 void CoreTest::apiCatalogLoadsLocalIndex() {
@@ -549,6 +550,28 @@ void CoreTest::clientFiltersHotTypicalArticlesByReadWindowAndLimit() {
   }
   QCOMPARE(filtered.first().readCount, 30000);
   QCOMPARE(filtered.last().readCount, 49000);
+}
+
+void CoreTest::clientBuildsUserControlledHotTypicalCollectionPlan() {
+  ContentDataClient client;
+  const QString keywords = QStringLiteral("财经, 股票\nAI｜科技 ； 情感");
+  const auto plan = client.buildHotTypicalCollectionPlan(keywords, QStringLiteral("11"), QStringLiteral("5"),
+                                                         QStringLiteral("2026-04-01"), QStringLiteral("2026-04-30"),
+                                                         10000, 80000, 33, 7, 900);
+  QCOMPARE(plan.keywords, QStringList({QStringLiteral("财经"), QStringLiteral("股票"), QStringLiteral("AI"), QStringLiteral("科技"), QStringLiteral("情感")}));
+  QCOMPARE(plan.pubType, QStringLiteral("11"));
+  QCOMPARE(plan.category, QStringLiteral("5"));
+  QCOMPARE(plan.startTime, QStringLiteral("2026-04-01"));
+  QCOMPARE(plan.endTime, QStringLiteral("2026-04-30"));
+  QCOMPARE(plan.minRead, 10000);
+  QCOMPARE(plan.maxRead, 80000);
+  QCOMPARE(plan.targetCount, 33);
+  QCOMPARE(plan.maxPagesPerKeyword, 7);
+  QCOMPARE(plan.maxScanCandidates, 900);
+  const QString summary = client.hotTypicalCollectionPlanSummary(plan);
+  QVERIFY(summary.contains(QStringLiteral("财经,股票,AI,科技,情感")));
+  QVERIFY(summary.contains(QStringLiteral("10000")));
+  QVERIFY(summary.contains(QStringLiteral("80000")));
 }
 
 QTEST_MAIN(CoreTest)

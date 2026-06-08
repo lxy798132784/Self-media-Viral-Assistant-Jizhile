@@ -392,22 +392,39 @@ QString ContentDataClient::classifyApiError(int status_code, const QString& erro
 HotTypicalCollectionPlan ContentDataClient::buildEmotionRecentMonthCollectionPlan(const QDate& today, int min_read,
                                                                                   int max_read,
                                                                                   int target_count) const {
-  HotTypicalCollectionPlan plan;
   const QDate safe_today = today.isValid() ? today : QDate::currentDate();
-  plan.startTime = safe_today.addMonths(-1).toString(Qt::ISODate);
-  plan.endTime = safe_today.toString(Qt::ISODate);
+  return buildHotTypicalCollectionPlan(
+      QStringLiteral("情感,婚姻,恋爱,分手,复合,夫妻,婆媳,前任,失恋,两性,亲密关系,原生家庭,爱情,婚恋,离婚"),
+      QStringLiteral("0"), QStringLiteral("8"), safe_today.addMonths(-1).toString(Qt::ISODate),
+      safe_today.toString(Qt::ISODate), min_read, max_read, target_count, 3, qMax(qMax(1, target_count) * 10, 200));
+}
+
+HotTypicalCollectionPlan ContentDataClient::buildHotTypicalCollectionPlan(const QString& keywords, const QString& pub_type,
+                                                                          const QString& category, const QString& start_time,
+                                                                          const QString& end_time, int min_read,
+                                                                          int max_read, int target_count,
+                                                                          int max_pages_per_keyword,
+                                                                          int max_scan_candidates) const {
+  HotTypicalCollectionPlan plan;
+  const QString normalized = keywords.trimmed().isEmpty() ? QStringLiteral("公众号") : keywords;
+  const QStringList raw = normalized.split(QRegularExpression(QStringLiteral("[,，;；|｜\\n\\r\\t]+")), Qt::SkipEmptyParts);
+  QSet<QString> seen;
+  for (const auto& item : raw) {
+    const QString clean = item.trimmed();
+    if (clean.isEmpty() || seen.contains(clean)) continue;
+    seen.insert(clean);
+    plan.keywords << clean;
+  }
+  if (plan.keywords.isEmpty()) plan.keywords << QStringLiteral("公众号");
+  plan.pubType = pub_type.trimmed().isEmpty() ? QStringLiteral("0") : pub_type.trimmed();
+  plan.category = category.trimmed().isEmpty() ? QStringLiteral("0") : category.trimmed();
+  plan.startTime = start_time.trimmed();
+  plan.endTime = end_time.trimmed();
   plan.minRead = qMax(0, min_read);
   plan.maxRead = qMax(plan.minRead, max_read);
   plan.targetCount = qMax(1, target_count);
-  plan.category = QStringLiteral("8");
-  plan.pubType = QStringLiteral("0");
-  plan.maxPagesPerKeyword = 3;
-  plan.maxScanCandidates = qMax(plan.targetCount * 10, 200);
-  plan.keywords = {QStringLiteral("情感"), QStringLiteral("婚姻"), QStringLiteral("恋爱"),
-                   QStringLiteral("分手"), QStringLiteral("复合"), QStringLiteral("夫妻"),
-                   QStringLiteral("婆媳"), QStringLiteral("前任"), QStringLiteral("失恋"),
-                   QStringLiteral("两性"), QStringLiteral("亲密关系"), QStringLiteral("原生家庭"),
-                   QStringLiteral("爱情"), QStringLiteral("婚恋"), QStringLiteral("离婚")};
+  plan.maxPagesPerKeyword = qMax(1, max_pages_per_keyword);
+  plan.maxScanCandidates = qMax(plan.targetCount, max_scan_candidates);
   return plan;
 }
 

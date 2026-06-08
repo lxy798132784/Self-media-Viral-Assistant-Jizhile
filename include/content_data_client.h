@@ -238,6 +238,11 @@ class ContentDataClient : public QObject {
   HotTypicalCollectionPlan buildEmotionRecentMonthCollectionPlan(const QDate& today, int min_read = 30000,
                                                                  int max_read = 50000,
                                                                  int target_count = 20) const;
+  HotTypicalCollectionPlan buildHotTypicalCollectionPlan(const QString& keywords, const QString& pub_type,
+                                                         const QString& category, const QString& start_time,
+                                                         const QString& end_time, int min_read, int max_read,
+                                                         int target_count, int max_pages_per_keyword,
+                                                         int max_scan_candidates) const;
   QVector<Article> filterHotTypicalArticles(const QVector<Article>& articles, int min_read, int max_read,
                                             int limit) const;
   QString hotTypicalCollectionPlanSummary(const HotTypicalCollectionPlan& plan) const;

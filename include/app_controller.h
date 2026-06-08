@@ -99,6 +99,16 @@ class AppController : public QObject {
                                              const QString& endTime) const;
   Q_INVOKABLE QString emotionRecentMonthCollectionPreview(int minRead, int maxRead, int targetCount) const;
   Q_INVOKABLE int runEmotionRecentMonthCollection(const QString& apiKey, int minRead, int maxRead, int targetCount);
+  Q_INVOKABLE QString targetedHotTypicalCollectionPreview(const QString& keywords, const QString& pubType,
+                                                          const QString& category, const QString& startTime,
+                                                          const QString& endTime, int minRead, int maxRead,
+                                                          int targetCount, int maxPagesPerKeyword,
+                                                          int maxScanCandidates) const;
+  Q_INVOKABLE int runTargetedHotTypicalCollection(const QString& apiKey, const QString& keywords,
+                                                  const QString& pubType, const QString& category,
+                                                  const QString& startTime, const QString& endTime,
+                                                  int minRead, int maxRead, int targetCount,
+                                                  int maxPagesPerKeyword, int maxScanCandidates);
   Q_INVOKABLE bool exportReport(const QString& path);
   Q_INVOKABLE QStringList taskRows() const;
   Q_INVOKABLE QStringList runRows() const;

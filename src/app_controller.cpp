@@ -554,6 +554,28 @@ QString AppController::emotionRecentMonthCollectionPreview(int minRead, int maxR
 
 int AppController::runEmotionRecentMonthCollection(const QString& apiKey, int minRead, int maxRead, int targetCount) {
   const auto plan = client_.buildEmotionRecentMonthCollectionPlan(QDate::currentDate(), minRead, maxRead, targetCount);
+  return runTargetedHotTypicalCollection(apiKey, plan.keywords.join(QStringLiteral(",")), plan.pubType, plan.category,
+                                         plan.startTime, plan.endTime, plan.minRead, plan.maxRead, plan.targetCount,
+                                         plan.maxPagesPerKeyword, plan.maxScanCandidates);
+}
+
+QString AppController::targetedHotTypicalCollectionPreview(const QString& keywords, const QString& pubType,
+                                                           const QString& category, const QString& startTime,
+                                                           const QString& endTime, int minRead, int maxRead,
+                                                           int targetCount, int maxPagesPerKeyword,
+                                                           int maxScanCandidates) const {
+  const auto plan = client_.buildHotTypicalCollectionPlan(keywords, pubType, category, startTime, endTime, minRead,
+                                                          maxRead, targetCount, maxPagesPerKeyword, maxScanCandidates);
+  return client_.hotTypicalCollectionPlanSummary(plan);
+}
+
+int AppController::runTargetedHotTypicalCollection(const QString& apiKey, const QString& keywords,
+                                                   const QString& pubType, const QString& category,
+                                                   const QString& startTime, const QString& endTime,
+                                                   int minRead, int maxRead, int targetCount,
+                                                   int maxPagesPerKeyword, int maxScanCandidates) {
+  const auto plan = client_.buildHotTypicalCollectionPlan(keywords, pubType, category, startTime, endTime, minRead,
+                                                          maxRead, targetCount, maxPagesPerKeyword, maxScanCandidates);
   const QString key = apiKey.trimmed().isEmpty() ? config_.apiKey() : apiKey.trimmed();
   QVector<Article> accepted;
   QSet<QString> seen;
