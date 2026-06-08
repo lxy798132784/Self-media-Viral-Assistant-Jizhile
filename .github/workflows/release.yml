@@ -57,7 +57,7 @@ jobs:
           mv "${ASSET_ROOT}.tar.gz" release-out/
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.platform }}-asset
           path: release-out/*
@@ -92,7 +92,7 @@ jobs:
           Move-Item "media-hit-assistant-$version-windows-x64.zip" release-out\
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-x64-asset
           path: release-out/*
